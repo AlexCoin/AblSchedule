@@ -83,7 +83,10 @@ export default function Home() {
       const j = await res.json();
       if (!res.ok) throw Error(j.error || "Ошибка входа");
       if (j.url) setLogin(j.url);
-      else await refresh();
+      else {
+        if (role && role !== "admin") setTab("schedule");
+        await refresh();
+      }
     } catch (e) {
       setError((e as Error).message);
     }
@@ -140,7 +143,8 @@ export default function Home() {
     try {
       if (file.size > 2 * 1024 * 1024)
         throw Error("Файл должен быть меньше 2 МБ");
-      const { readSheet: readXlsxFile } = await import("read-excel-file/browser");
+      const { readSheet: readXlsxFile } =
+        await import("read-excel-file/browser");
       const sheet = await readXlsxFile(file);
       const rows: string[] = [];
       sheet.forEach((row, i) => {
@@ -266,14 +270,6 @@ export default function Home() {
           >
             Расписание
           </button>
-          {data.user && (
-            <button
-              className={tab === "captain" ? "active" : ""}
-              onClick={() => setTab("captain")}
-            >
-              Мой матч {mine?.offers.some((o) => o.team !== my?.id) && <i>●</i>}
-            </button>
-          )}
           {data.user?.admin && (
             <button
               className={tab === "admin" ? "active" : ""}
@@ -286,11 +282,7 @@ export default function Home() {
         <div className="toolbar">
           <div>
             <h2>
-              {tab === "schedule"
-                ? "Календарь игр"
-                : tab === "captain"
-                  ? "Договоримся об игре"
-                  : "Пульт организатора"}
+              {tab === "schedule" ? "Календарь игр" : "Пульт организатора"}
             </h2>
             <span className="muted">Профсоюзная · Все время по Москве</span>
           </div>
@@ -340,6 +332,66 @@ export default function Home() {
             </div>
             {tab === "schedule" && (
               <>
+                {data.user && !data.user.admin && !my && (
+                  <section className="message">
+                    Для согласования организатор должен назначить вам команду.
+                    Ваш Telegram ID: <b>{data.user.id}</b>
+                  </section>
+                )}
+                {my && !mine && (
+                  <section className="message">
+                    В этом туре матч вашей команды не назначен.
+                  </section>
+                )}
+                {my && mine && (
+                  <section className="my-match">
+                    <Badge id={mine.a} />
+                    <span className="vs">VS</span>
+                    <Badge id={mine.b} />
+                    <div>
+                      <small>ВАШ МАТЧ · {r.name}</small>
+                      <p>
+                        {mine.slot
+                          ? `Согласовано: ${mine.slot.replace("T", " ")} МСК`
+                          : "Выберите несколько подходящих слотов в карточках ниже. Соперник подтвердит один из них."}
+                      </p>
+                      {mine.slot && count(mine.slot).length > 1 && (
+                        <b className="danger">
+                          Конфликт: решение за организатором
+                        </b>
+                      )}
+                      {!mine.slot &&
+                        mine.offers.some((o) => o.team !== my.id) && (
+                          <p className="incoming-hint">
+                            Есть предложения соперника — подтвердите подходящее
+                            в карточке.
+                          </p>
+                        )}
+                      {mine.slot && open && (
+                        <button
+                          disabled={busy}
+                          onClick={() =>
+                            action({
+                              type: "reopen",
+                              round: r.id,
+                              match: mine.id,
+                            })
+                          }
+                        >
+                          Открыть пересогласование
+                        </button>
+                      )}
+                      {!open && (
+                        <p className="muted">
+                          {r.published
+                            ? "Тур опубликован. Для переноса обратитесь к организатору."
+                            : "Согласование закрыто. Сроки указаны выше."}
+                        </p>
+                      )}
+                    </div>
+                  </section>
+                )}
+
                 <div className="filters">
                   {["all", ...new Set(r.slots.map((s) => s.date))].map((d) => (
                     <button
@@ -356,12 +408,31 @@ export default function Home() {
                     .filter((s) => day === "all" || day === s.date)
                     .map((s) => {
                       const matches = count(s.id);
+                      const theirs =
+                        !!my &&
+                        !!mine?.offers.some(
+                          (o) => o.team !== my.id && o.slot === s.id,
+                        );
+                      const own =
+                        !!my &&
+                        !!mine?.offers.some(
+                          (o) => o.team === my.id && o.slot === s.id,
+                        );
+                      const agreed = mine?.slot === s.id;
                       return (
                         <article
                           className={
-                            "card " + (matches.length > 1 ? "conflict" : "")
+                            "card " +
+                            (matches.length > 1 ? "conflict " : "") +
+                            (theirs
+                              ? "incoming-card "
+                              : own
+                                ? "selected-card "
+                                : "") +
+                            (agreed ? "agreed-card" : "")
                           }
                           key={s.id}
+                          data-slot={s.id}
                         >
                           <div className="card-top">
                             <span>ПРОФСОЮЗНАЯ</span>
@@ -397,131 +468,64 @@ export default function Home() {
                                   : "○ Доступен"}
                             </span>
                           </div>
+                          {my && mine && (
+                            <div className="card-actions">
+                              {agreed ? (
+                                <strong className="agreement-label">
+                                  Ваш матч согласован
+                                </strong>
+                              ) : (
+                                <>
+                                  {theirs && (
+                                    <strong className="incoming-hint">
+                                      Соперник предлагает — ждёт вашего
+                                      подтверждения
+                                    </strong>
+                                  )}
+                                  {own && (
+                                    <span className="proposal-label">
+                                      Ваше предложение · ждём соперника
+                                    </span>
+                                  )}
+                                  {!!matches.filter((m) => m.id !== mine.id)
+                                    .length &&
+                                    !mine.slot && (
+                                      <small className="danger">
+                                        Слот уже занят. При согласовании вашей
+                                        пары конфликт решит организатор.
+                                      </small>
+                                    )}
+                                  {!mine.slot && (
+                                    <button
+                                      disabled={
+                                        busy || !open || (own && !theirs)
+                                      }
+                                      onClick={() =>
+                                        action({
+                                          type: theirs ? "accept" : "offer",
+                                          round: r.id,
+                                          match: mine.id,
+                                          slot: s.id,
+                                        })
+                                      }
+                                    >
+                                      {theirs
+                                        ? "Подтвердить этот слот"
+                                        : own
+                                          ? "Слот выбран"
+                                          : "Выбрать этот слот"}
+                                    </button>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          )}
                         </article>
                       );
                     })}
                 </div>
               </>
             )}
-            {tab === "captain" &&
-              (!my ? (
-                <section className="empty">
-                  <h3>Нужна привязка к команде</h3>
-                  <p>
-                    Передайте организатору ваш Telegram ID:{" "}
-                    <b>{data.user?.id}</b>
-                  </p>
-                </section>
-              ) : !mine ? (
-                <section className="empty">
-                  В этом туре матч вашей команды не назначен.
-                </section>
-              ) : (
-                <>
-                  <div className="my-match">
-                    <Badge id={mine.a} />
-                    <span className="vs">VS</span>
-                    <Badge id={mine.b} />
-                    <div>
-                      <small>ВАШ МАТЧ · {r.name}</small>
-                      <p>
-                        {mine.slot
-                          ? `Согласовано: ${mine.slot.replace("T", " ")} МСК`
-                          : "Выберите подходящее время или подтвердите предложение соперника"}
-                      </p>
-                      {mine.slot && count(mine.slot).length > 1 && (
-                        <b className="danger">
-                          Конфликт: решение за организатором
-                        </b>
-                      )}
-                      {mine.slot && open && (
-                        <button
-                          disabled={busy}
-                          onClick={() =>
-                            action({
-                              type: "reopen",
-                              round: r.id,
-                              match: mine.id,
-                            })
-                          }
-                        >
-                          Открыть пересогласование
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  {!open && (
-                    <div className="message">
-                      {r.published
-                        ? "Расписание опубликовано. Для переноса обратитесь к организатору."
-                        : "Сейчас согласование закрыто. Сроки указаны выше."}
-                    </div>
-                  )}
-                  <div className="slot-list">
-                    {r.slots.map((s) => {
-                      const others = count(s.id).filter(
-                        (m) => m.id !== mine.id,
-                      );
-                      const theirs = mine.offers.some(
-                        (o) => o.team !== my.id && o.slot === s.id,
-                      );
-                      const own = mine.offers.some(
-                        (o) => o.team === my.id && o.slot === s.id,
-                      );
-                      return (
-                        <article
-                          className={theirs ? "slot incoming" : "slot"}
-                          key={s.id}
-                        >
-                          <div>
-                            <b>{s.time}</b>
-                            <span>{formatDate(s.date)}</span>
-                          </div>
-                          <div className="slot-detail">
-                            {theirs ? (
-                              <strong>
-                                Соперник предлагает — ждёт вашего подтверждения
-                              </strong>
-                            ) : own ? (
-                              <strong>Ваше предложение · ждём соперника</strong>
-                            ) : (
-                              <span>
-                                {mine.slot === s.id
-                                  ? "Вы согласовали этот слот"
-                                  : "Можно предложить"}
-                              </span>
-                            )}
-                            {others.map((m) => (
-                              <small className="danger" key={m.id}>
-                                Уже согласовали: <Pair m={m} />
-                              </small>
-                            ))}
-                          </div>
-                          <button
-                            disabled={
-                              busy || !open || !!mine.slot || (own && !theirs)
-                            }
-                            onClick={() =>
-                              action({
-                                type: theirs ? "accept" : "offer",
-                                round: r.id,
-                                match: mine.id,
-                                slot: s.id,
-                              })
-                            }
-                          >
-                            {theirs
-                              ? "Подтвердить"
-                              : own
-                                ? "Предложено"
-                                : "Предложить"}
-                          </button>
-                        </article>
-                      );
-                    })}
-                  </div>
-                </>
-              ))}
             {tab === "admin" && data.user?.admin && (
               <div className="admin">
                 <section className="panel">

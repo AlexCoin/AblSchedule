@@ -820,3 +820,55 @@ footer > span {
 .panel form:has(textarea[name="pairs"]) label {
   width: 100%;
 }
+.card {
+  display: flex;
+  flex-direction: column;
+}
+.card-actions {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.card-actions button {
+  width: 100%;
+  background: var(--red);
+  padding: 12px 8px;
+  font-size: 12px;
+}
+.card-actions small {
+  font-size: 11px;
+  line-height: 1.6;
+}
+.card-actions strong,
+.card-actions span {
+  font-size: 11px;
+  line-height: 1.6;
+}
+.incoming-card {
+  border-color: #ca8d53;
+  background: #fff5e9;
+}
+.selected-card {
+  border-color: #869f83;
+  background: #edf3ea;
+}
+.agreed-card {
+  border-color: #64845c;
+}
+.incoming-hint {
+  color: #8a4e21;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.proposal-label,
+.agreement-label {
+  color: #42663b;
+}
+.card .card-bottom {
+  margin-top: auto;
+}
+.card .free {
+  flex: 1;
+  min-height: 139px;
+}

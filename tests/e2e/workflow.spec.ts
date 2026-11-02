@@ -31,26 +31,57 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
   await settings.locator("[name=deadline]").fill("2027-01-01T00:00");
   await settings.getByRole("button").click();
   await expect(page.getByRole("status")).toContainText("Изменения сохранены");
+  const occupied = await page.request.post("/api/action", {
+    headers: { origin: "http://localhost:3100" },
+    data: { type: "assign", round: "1", match: "2", slot: "2026-11-07T10:00" },
+  });
+  expect(occupied.ok()).toBeTruthy();
   await page.getByRole("button", { name: "Капитан A", exact: true }).click();
-  await page.getByRole("button", { name: "Мой матч" }).click();
+  await expect(page.getByRole("button", { name: "Мой матч" })).toHaveCount(0);
   const forbiddenMatch = await page.request.post("/api/action", {
     headers: { origin: "http://localhost:3100" },
     data: { type: "offer", round: "1", match: "2", slot: "2026-11-07T10:00" },
   });
   expect(forbiddenMatch.status()).toBe(400);
 
+  await expect(page.locator('[data-slot="2026-11-07T10:00"]')).toContainText(
+    "Слот уже занят",
+  );
+  await expect(
+    page.locator('[data-slot="2026-11-07T10:00"] button'),
+  ).toBeEnabled();
   await page
-    .getByRole("button", { name: "Предложить", exact: true })
+    .getByRole("button", { name: "Выбрать этот слот", exact: true })
     .first()
     .click();
   await expect(
     page.getByText("Ваше предложение · ждём соперника"),
   ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Выбрать этот слот", exact: true })
+    .first()
+    .click();
+  await expect(page.getByText("Ваше предложение · ждём соперника")).toHaveCount(
+    2,
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    )
+    .toBe(true);
+  await page.screenshot({ path: "data/captain-mobile.png", fullPage: true });
   await page.getByRole("button", { name: "Капитан Б", exact: true }).click();
   await expect(
     page.getByText("Соперник предлагает — ждёт вашего подтверждения"),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Подтвердить", exact: true }).click();
+  ).toHaveCount(2);
+  await page
+    .getByRole("button", { name: "Подтвердить этот слот", exact: true })
+    .first()
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Подтвердить этот слот", exact: true }),
+  ).toHaveCount(0);
   await expect(page.getByText("Согласовано:", { exact: false })).toBeVisible();
   await page.getByRole("button", { name: "Организатор", exact: true }).click();
   await page.getByRole("button", { name: "Управление турниром" }).click();
