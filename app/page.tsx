@@ -103,12 +103,13 @@ export default function Home() {
       const res = await fetch(role ? "/api/auth/demo" : "/api/auth/telegram", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role }),
+        body: JSON.stringify({ role, round: roundId || undefined }),
       });
       const j = await res.json();
       if (!res.ok) throw Error(j.error || "Ошибка входа");
       if (j.url) setLogin(j.url);
       else {
+        if (j.round) setRoundId(j.round);
         if (role && role !== "admin") setTab("schedule");
         await refresh();
       }
@@ -255,10 +256,14 @@ export default function Home() {
         {data.demo && (
           <div className="demo">
             <b>Демонстрационный режим</b>
-            <span>Проверяйте сценарий от лица обеих команд</span>
+            <span>
+              1-я пара: A и Б · 2-я пара: C и D · Можно согласовать один слот
+            </span>
             {[
               ["captain", "Капитан A"],
               ["opponent", "Капитан Б"],
+              ["captain_c", "Капитан C"],
+              ["captain_d", "Капитан D"],
               ["admin", "Организатор"],
             ].map(([role, label]) => (
               <button key={role} onClick={() => auth(role)}>

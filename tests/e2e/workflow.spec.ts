@@ -31,11 +31,19 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
   await settings.locator("[name=deadline]").fill("2027-01-01T00:00");
   await settings.getByRole("button").click();
   await expect(page.getByRole("status")).toContainText("Изменения сохранены");
-  const occupied = await page.request.post("/api/action", {
-    headers: { origin: "http://localhost:3100" },
-    data: { type: "assign", round: "1", match: "2", slot: "2026-11-07T10:00" },
-  });
-  expect(occupied.ok()).toBeTruthy();
+  await page.getByRole("button", { name: "Капитан C", exact: true }).click();
+  await expect(page.locator(".my-match")).toContainText("АИТ");
+  await page
+    .locator('[data-slot="2026-11-07T10:00"]')
+    .getByRole("button", { name: "Выбрать этот слот", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Капитан D", exact: true }).click();
+  await expect(page.locator(".my-match")).toContainText("АТВ Last");
+  await page
+    .locator('[data-slot="2026-11-07T10:00"]')
+    .getByRole("button", { name: "Подтвердить этот слот", exact: true })
+    .click();
+  await expect(page.getByText("Согласовано:", { exact: false })).toBeVisible();
   await page.getByRole("button", { name: "Капитан A", exact: true }).click();
   await expect(page.getByRole("button", { name: "Мой матч" })).toHaveCount(0);
   const forbiddenMatch = await page.request.post("/api/action", {
@@ -86,8 +94,8 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
   await page.getByRole("button", { name: "Организатор", exact: true }).click();
   await page.getByRole("button", { name: "Управление турниром" }).click();
   let selectors = page.locator(".admin-match select");
-  const first = await selectors.nth(0).inputValue();
-  await selectors.nth(1).selectOption(first);
+  expect(await selectors.nth(0).inputValue()).toBe("2026-11-07T10:00");
+  expect(await selectors.nth(1).inputValue()).toBe("2026-11-07T10:00");
   await expect(
     page.getByText("Конфликт — выберите другое время одной из пар"),
   ).toHaveCount(2);
@@ -95,6 +103,10 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
   await expect(page.locator(".error[role=alert]")).toContainText(
     "разрешите конфликты",
   );
+  await selectors.nth(1).selectOption("2026-11-07T11:10");
+  await expect(
+    page.getByText("Конфликт — выберите другое время одной из пар"),
+  ).toHaveCount(0);
   const state = await (await page.request.get("/api/state")).json();
   const r = state.rounds[0];
   for (let i = 0; i < r.matches.length; i++) {
