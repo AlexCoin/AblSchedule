@@ -168,3 +168,25 @@ test("invalid windows rejected; slots cannot overlap; pairs editable only before
     apply(s, admin, { type: "pairs", round: "1", pairs }, now),
   );
 });
+
+test("new round slot plan is isolated and validated", () => {
+  const s = setup();
+  const input = {
+    type: "round",
+    name: "2 тур",
+    saturday: "2026-11-14",
+    opens: "2026-11-09T12:00",
+    deadline: "2026-11-10T18:00",
+    pairs: s.rounds[0].matches.map((m) => [m.a, m.b]),
+    start: "09:00",
+    perDay: 10,
+  };
+  apply(s, admin, input, now);
+  assert.equal(s.rounds[0].slots.length, 16);
+  assert.equal(s.rounds[0].slots[0].time, "10:00");
+  assert.equal(s.rounds[1].slots.length, 20);
+  assert.equal(s.rounds[1].slots[0].time, "09:00");
+  assert.throws(() => apply(s, admin, { ...input, start: "23:00" }, now));
+  assert.throws(() => apply(s, admin, { ...input, perDay: 7 }, now));
+  assert.throws(() => apply(s, admin, { ...input, perDay: 8.5 }, now));
+});

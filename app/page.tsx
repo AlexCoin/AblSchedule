@@ -9,6 +9,12 @@ type Data = {
   teams: ViewTeam[];
   rounds: Round[];
 };
+const shortDate = (s: string) =>
+  new Date(s + "T12:00:00+03:00").toLocaleDateString("ru-RU", {
+    day: "2-digit",
+    month: "long",
+    timeZone: "Europe/Moscow",
+  });
 const formatDate = (s: string) =>
   new Date(s + "T12:00:00+03:00").toLocaleDateString("ru-RU", {
     day: "numeric",
@@ -26,11 +32,20 @@ export default function Home() {
     [busy, setBusy] = useState(false),
     [login, setLogin] = useState(""),
     [pairs, setPairs] = useState("");
+  const [adminView, setAdminView] = useState("current");
+  const [newSaturday, setNewSaturday] = useState("");
+  const [newStart, setNewStart] = useState("10:00");
+  const [newPerDay, setNewPerDay] = useState(8);
+  const [newName, setNewName] = useState("");
+  const [newOpens, setNewOpens] = useState("");
+  const [newDeadline, setNewDeadline] = useState("");
   async function refresh() {
     try {
       const res = await fetch("/api/state");
       if (!res.ok) throw Error("Не удалось загрузить расписание");
-      setData(await res.json());
+      const next: Data = await res.json();
+      setData(next);
+      return next;
     } catch (e) {
       setError(String(e));
     }
@@ -65,7 +80,17 @@ export default function Home() {
       const json = await res.json();
       if (!res.ok) throw Error(json.error);
       setNotice(json.warning || "Изменения сохранены");
-      await refresh();
+      const next = await refresh();
+      if ((input as { type?: string }).type === "round" && next) {
+        setRoundId(next.rounds.at(-1)!.id);
+        setDay("all");
+        setAdminView("current");
+        setPairs("");
+        setNewName("");
+        setNewSaturday("");
+        setNewOpens("");
+        setNewDeadline("");
+      }
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -206,25 +231,27 @@ export default function Home() {
         </div>
       </header>
       <main>
-        <section className="hero">
-          <div>
-            <div className="eyebrow">СЕЗОН 2026 / 2027</div>
-            <h1>
-              ИГРА НАЧИНАЕТСЯ
-              <br />
-              <span>С ДОГОВОРЁННОСТИ.</span>
-            </h1>
-            <p>
-              Выберите время. Согласуйте с соперником. Встретимся на паркете.
-            </p>
-          </div>
-          <div className="basket" aria-hidden="true">
-            <svg viewBox="0 0 200 200">
-              <circle cx="100" cy="100" r="91" />
-              <path d="M9 100h182M100 9v182M35 35c85 20 110 110 130 130M165 35C80 55 55 145 35 165" />
-            </svg>
-          </div>
-        </section>
+        {tab === "schedule" && (
+          <section className="hero">
+            <div>
+              <div className="eyebrow">СЕЗОН 2026 / 2027</div>
+              <h1>
+                ИГРА НАЧИНАЕТСЯ
+                <br />
+                <span>С ДОГОВОРЁННОСТИ.</span>
+              </h1>
+              <p>
+                Выберите время. Согласуйте с соперником. Встретимся на паркете.
+              </p>
+            </div>
+            <div className="basket" aria-hidden="true">
+              <svg viewBox="0 0 200 200">
+                <circle cx="100" cy="100" r="91" />
+                <path d="M9 100h182M100 9v182M35 35c85 20 110 110 130 130M165 35C80 55 55 145 35 165" />
+              </svg>
+            </div>
+          </section>
+        )}
         {data.demo && (
           <div className="demo">
             <b>Демонстрационный режим</b>
@@ -282,27 +309,37 @@ export default function Home() {
         <div className="toolbar">
           <div>
             <h2>
-              {tab === "schedule" ? "Календарь игр" : "Пульт организатора"}
+              {tab === "schedule"
+                ? "Календарь игр"
+                : adminView === "new"
+                  ? "Новый тур"
+                  : adminView === "teams"
+                    ? "Команды и капитаны"
+                    : "Управление туром"}
             </h2>
             <span className="muted">Профсоюзная · Все время по Москве</span>
           </div>
-          {data.rounds.length > 0 && (
-            <select
-              aria-label="Тур"
-              value={r?.id}
-              onChange={(e) => {
-                setRoundId(e.target.value);
-                setDay("all");
-              }}
-            >
-              {data.rounds.map((x) => (
-                <option key={x.id} value={x.id}>
-                  {x.name}
-                  {x.published ? " · опубликован" : " · согласование"}
-                </option>
-              ))}
-            </select>
-          )}
+          {data.rounds.length > 0 &&
+            (tab !== "admin" || adminView === "current") && (
+              <label className="round-picker">
+                Выбранный тур
+                <select
+                  aria-label="Тур"
+                  value={r?.id}
+                  onChange={(e) => {
+                    setRoundId(e.target.value);
+                    setDay("all");
+                  }}
+                >
+                  {data.rounds.map((x) => (
+                    <option key={x.id} value={x.id}>
+                      {x.name}
+                      {x.published ? " · опубликован" : " · согласование"}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
         </div>
         {!r ? (
           <section className="empty">
@@ -313,23 +350,25 @@ export default function Home() {
           </section>
         ) : (
           <>
-            <div className="round-info">
-              <span className={"pill " + (r.published ? "green" : "")}>
-                {r.published
-                  ? "Опубликовано"
-                  : open
-                    ? "Идёт согласование"
-                    : "Согласование закрыто"}
-              </span>
-              <span>
-                Окно: {r.opens.replace("T", " ")} —{" "}
-                {r.deadline.replace("T", " ")} МСК
-              </span>
-              <span>
-                {r.matches.filter((m) => m.slot).length} / {r.matches.length}{" "}
-                согласовано
-              </span>
-            </div>
+            {(tab !== "admin" || adminView === "current") && (
+              <div className="round-info">
+                <span className={"pill " + (r.published ? "green" : "")}>
+                  {r.published
+                    ? "Опубликовано"
+                    : open
+                      ? "Идёт согласование"
+                      : "Согласование закрыто"}
+                </span>
+                <span>
+                  Окно: {r.opens.replace("T", " ")} —{" "}
+                  {r.deadline.replace("T", " ")} МСК
+                </span>
+                <span>
+                  {r.matches.filter((m) => m.slot).length} / {r.matches.length}{" "}
+                  согласовано
+                </span>
+              </div>
+            )}
             {tab === "schedule" && (
               <>
                 {data.user && !data.user.admin && !my && (
@@ -435,10 +474,11 @@ export default function Home() {
                           data-slot={s.id}
                         >
                           <div className="card-top">
-                            <span>ПРОФСОЮЗНАЯ</span>
-                            <b>{s.time}</b>
+                            <span>ПРОФА</span>
                           </div>
-                          <div className="card-date">{formatDate(s.date)}</div>
+                          <div className="card-date">
+                            {shortDate(s.date)}, {s.time}
+                          </div>
                           {matches.length ? (
                             matches.map((m) => (
                               <div className="match" key={m.id}>
@@ -449,24 +489,31 @@ export default function Home() {
                             ))
                           ) : (
                             <div className="free">
-                              <span>＋</span>
+                              <span>— : —</span>
                               <p>Свободный слот</p>
                             </div>
                           )}
                           <div className="card-bottom">
                             <span>{r.name}</span>
-                            <span
-                              className={matches.length > 1 ? "danger" : ""}
-                            >
-                              {matches.length > 1
-                                ? "● Конфликт"
-                                : matches.length
-                                  ? "● " +
-                                    (r.published
-                                      ? "В расписании"
-                                      : "Согласовано")
-                                  : "○ Доступен"}
+                            <span className="card-location">
+                              <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Zm0 10a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z" />
+                              </svg>
+                              Профа
                             </span>
+                          </div>
+                          <div
+                            className={
+                              "card-status " +
+                              (matches.length > 1 ? "danger" : "")
+                            }
+                          >
+                            {matches.length > 1
+                              ? "● Конфликт"
+                              : matches.length
+                                ? "● " +
+                                  (r.published ? "В расписании" : "Согласовано")
+                                : "○ Доступен"}
                           </div>
                           {my && mine && (
                             <div className="card-actions">
@@ -491,8 +538,8 @@ export default function Home() {
                                     .length &&
                                     !mine.slot && (
                                       <small className="danger">
-                                        Слот уже занят. При согласовании вашей
-                                        пары конфликт решит организатор.
+                                        Слот уже занят — решение за
+                                        организатором.
                                       </small>
                                     )}
                                   {!mine.slot && (
@@ -528,320 +575,485 @@ export default function Home() {
             )}
             {tab === "admin" && data.user?.admin && (
               <div className="admin">
-                <section className="panel">
-                  <h3>Согласование и публикация</h3>
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const f = new FormData(e.currentTarget);
-                      action({
-                        type: "settings",
-                        round: r.id,
-                        opens: f.get("opens"),
-                        deadline: f.get("deadline"),
-                      });
-                    }}
-                    key={r.id + r.opens + r.deadline}
-                  >
-                    <label>
-                      Открытие, МСК
-                      <input
-                        name="opens"
-                        type="datetime-local"
-                        defaultValue={r.opens}
-                        required
-                      />
-                    </label>
-                    <label>
-                      Дедлайн, МСК
-                      <input
-                        name="deadline"
-                        type="datetime-local"
-                        defaultValue={r.deadline}
-                        required
-                      />
-                    </label>
-                    <button disabled={busy}>Сохранить сроки</button>
-                  </form>
-                  <button
-                    className="publish"
-                    disabled={busy || r.published}
-                    onClick={() => action({ type: "publish", round: r.id })}
-                  >
-                    {r.published
-                      ? "Тур опубликован"
-                      : "Опубликовать весь тур ↗"}
-                  </button>
-                  <p className="muted">
-                    Публикация доступна, когда назначены все 16 игр и нет
-                    конфликтов.
-                  </p>
-                </section>
-                <section className="panel">
-                  <h3>Матчи и конфликты</h3>
-                  {!r.published &&
-                    !r.matches.some((m) => m.slot || m.offers.length) && (
+                <div className="admin-switch" aria-label="Разделы организатора">
+                  {[
+                    ["current", "Выбранный тур"],
+                    ["new", "＋ Новый тур"],
+                    ["teams", "Команды и капитаны"],
+                  ].map(([id, label]) => (
+                    <button
+                      key={id}
+                      className={adminView === id ? "selected" : ""}
+                      onClick={() => {
+                        setAdminView(id);
+                        setError("");
+                        setNotice("");
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {adminView === "current" && (
+                  <div className="round-workspace" key={r.id}>
+                    <div className="scope-heading">
+                      <div>
+                        <small>ВЫБРАННЫЙ ТУР</small>
+                        <h3>{r.name}</h3>
+                        <p>{formatDate(r.saturday)} · Профсоюзная</p>
+                      </div>
+                      <span className="pill">
+                        {r.published ? "Опубликован" : "Черновик"}
+                      </span>
+                    </div>
+                    <div className="round-metrics">
+                      <span>
+                        <b>{r.matches.length}</b> матчей
+                      </span>
+                      <span>
+                        <b>{r.slots.length}</b> слотов
+                      </span>
+                      <span>
+                        <b>
+                          {
+                            r.matches.filter(
+                              (m) => m.slot && count(m.slot).length > 1,
+                            ).length
+                          }
+                        </b>{" "}
+                        матчей с конфликтом
+                      </span>
+                    </div>
+                    <section className="panel">
+                      <h3>Сроки и публикация · {r.name}</h3>
                       <form
                         onSubmit={(e) => {
                           e.preventDefault();
+                          const f = new FormData(e.currentTarget);
+                          action({
+                            type: "settings",
+                            round: r.id,
+                            opens: f.get("opens"),
+                            deadline: f.get("deadline"),
+                          });
+                        }}
+                        key={r.id + r.opens + r.deadline}
+                      >
+                        <label>
+                          Открытие, МСК
+                          <input
+                            name="opens"
+                            type="datetime-local"
+                            defaultValue={r.opens}
+                            required
+                          />
+                        </label>
+                        <label>
+                          Дедлайн, МСК
+                          <input
+                            name="deadline"
+                            type="datetime-local"
+                            defaultValue={r.deadline}
+                            required
+                          />
+                        </label>
+                        <button disabled={busy}>Сохранить сроки</button>
+                      </form>
+                      <button
+                        className="publish"
+                        disabled={busy || r.published}
+                        onClick={() => action({ type: "publish", round: r.id })}
+                      >
+                        {r.published
+                          ? "Тур опубликован"
+                          : "Опубликовать весь тур ↗"}
+                      </button>
+                      <p className="muted">
+                        Публикация доступна, когда назначены все 16 игр и нет
+                        конфликтов.
+                      </p>
+                    </section>
+                    <section className="panel">
+                      <h3>Матчи · {r.name}</h3>
+                      {!r.published &&
+                        !r.matches.some((m) => m.slot || m.offers.length) && (
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              try {
+                                action({
+                                  type: "pairs",
+                                  round: r.id,
+                                  pairs: parsePairs(
+                                    String(
+                                      new FormData(e.currentTarget).get(
+                                        "pairs",
+                                      ),
+                                    ),
+                                  ),
+                                });
+                              } catch (e) {
+                                setError((e as Error).message);
+                              }
+                            }}
+                          >
+                            <label className="wide">
+                              Пары текущего тура: Команда 1;Команда 2
+                              <textarea
+                                name="pairs"
+                                rows={5}
+                                defaultValue={r.matches
+                                  .map(
+                                    (m) =>
+                                      team(m.a)?.name + ";" + team(m.b)?.name,
+                                  )
+                                  .join("\n")}
+                              />
+                            </label>
+                            <button disabled={busy}>Сохранить пары</button>
+                          </form>
+                        )}
+                      {r.matches.map((m) => (
+                        <div className="admin-match" key={m.id}>
+                          <div>
+                            <Pair m={m} />
+                            {m.slot && count(m.slot).length > 1 && (
+                              <small className="danger">
+                                Конфликт — выберите другое время одной из пар
+                              </small>
+                            )}
+                          </div>
+                          <select
+                            aria-label={"Время " + team(m.a)?.name}
+                            value={m.slot || ""}
+                            disabled={busy}
+                            onChange={(e) =>
+                              action({
+                                type: "assign",
+                                round: r.id,
+                                match: m.id,
+                                slot: e.target.value,
+                              })
+                            }
+                          >
+                            <option value="">Не назначено</option>
+                            {r.slots.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.date} {s.time}{" "}
+                                {count(s.id).length ? "· занято" : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </section>
+                    <details className="panel round-slots">
+                      <summary>
+                        Слоты выбранного тура · {r.slots.length}
+                        <span>Настроить время</span>
+                      </summary>
+                      <p className="muted">
+                        Изменения применяются только к «{r.name}». Используемые
+                        слоты удалить нельзя.
+                      </p>
+                      <div className="slot-chips">
+                        {r.slots.map((s) => (
+                          <button
+                            key={s.id}
+                            title="Удалить неиспользуемый слот"
+                            disabled={busy}
+                            onClick={() =>
+                              action({
+                                type: "deleteSlot",
+                                round: r.id,
+                                slot: s.id,
+                              })
+                            }
+                          >
+                            {s.date.slice(5)} {s.time} ×
+                          </button>
+                        ))}
+                      </div>
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const f = new FormData(e.currentTarget);
+                          action({
+                            type: "slot",
+                            round: r.id,
+                            date: f.get("date"),
+                            time: f.get("time"),
+                          });
+                        }}
+                      >
+                        <label>
+                          Дата
+                          <input
+                            type="date"
+                            name="date"
+                            required
+                            defaultValue={r.saturday}
+                          />
+                        </label>
+                        <label>
+                          Начало, МСК
+                          <input
+                            type="time"
+                            name="time"
+                            required
+                            defaultValue="10:00"
+                          />
+                        </label>
+                        <button disabled={busy}>Добавить слот</button>
+                      </form>
+                    </details>
+                  </div>
+                )}
+                {adminView === "new" && (
+                  <div className="new-workspace">
+                    {" "}
+                    <section className="panel">
+                      <h3>Создать тур и слоты</h3>
+                      <p className="muted">
+                        Отдельный новый тур. Существующие игры и слоты не
+                        изменятся. После создания откроется новый тур.
+                      </p>
+                      <form
+                        className="new-round"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const f = new FormData(e.currentTarget);
                           try {
+                            const parsed = pairs
+                              .trim()
+                              .split("\n")
+                              .map((line) =>
+                                line.split(";").map((name) => {
+                                  const t = teams.find(
+                                    (t) =>
+                                      t.name.toLowerCase() ===
+                                      name.trim().toLowerCase(),
+                                  );
+                                  if (!t)
+                                    throw Error("Неизвестная команда: " + name);
+                                  return t.id;
+                                }),
+                              );
                             action({
-                              type: "pairs",
-                              round: r.id,
-                              pairs: parsePairs(
-                                String(
-                                  new FormData(e.currentTarget).get("pairs"),
-                                ),
-                              ),
+                              type: "round",
+                              name: f.get("name"),
+                              saturday: f.get("saturday"),
+                              opens: f.get("opens"),
+                              deadline: f.get("deadline"),
+                              pairs: parsed,
+                              start: newStart,
+                              perDay: newPerDay,
                             });
                           } catch (e) {
                             setError((e as Error).message);
                           }
                         }}
                       >
-                        <label className="wide">
-                          Пары текущего тура: Команда 1;Команда 2
-                          <textarea
-                            name="pairs"
-                            rows={5}
-                            defaultValue={r.matches
-                              .map(
-                                (m) => team(m.a)?.name + ";" + team(m.b)?.name,
-                              )
-                              .join("\n")}
+                        <label>
+                          Название
+                          <input
+                            name="name"
+                            placeholder="2 тур"
+                            value={newName}
+                            onChange={(e) => setNewName(e.target.value)}
+                            required
                           />
                         </label>
-                        <button disabled={busy}>Сохранить пары</button>
+                        <label>
+                          Суббота
+                          <input
+                            name="saturday"
+                            value={newSaturday}
+                            type="date"
+                            required
+                            onChange={(e) => {
+                              setNewSaturday(e.target.value);
+                              if (!e.target.value) return;
+                              const w = defaultWindow(e.target.value);
+                              setNewOpens(w.opens);
+                              setNewDeadline(w.deadline);
+                            }}
+                          />
+                        </label>
+                        <label>
+                          Открытие, МСК
+                          <input
+                            name="opens"
+                            type="datetime-local"
+                            value={newOpens}
+                            onChange={(e) => setNewOpens(e.target.value)}
+                            required
+                          />
+                        </label>
+                        <label>
+                          Дедлайн, МСК
+                          <input
+                            name="deadline"
+                            type="datetime-local"
+                            value={newDeadline}
+                            onChange={(e) => setNewDeadline(e.target.value)}
+                            required
+                          />
+                        </label>
+                        <fieldset className="wide creation-slots">
+                          <legend>Слоты нового тура · 70 минут</legend>
+                          <div className="slot-config">
+                            <label>
+                              Первая игра, МСК
+                              <input
+                                name="start"
+                                type="time"
+                                required
+                                value={newStart}
+                                onChange={(e) => setNewStart(e.target.value)}
+                              />
+                            </label>
+                            <label>
+                              Слотов в каждый день
+                              <input
+                                name="perDay"
+                                type="number"
+                                min={8}
+                                max={20}
+                                required
+                                value={newPerDay}
+                                onChange={(e) =>
+                                  setNewPerDay(Number(e.target.value))
+                                }
+                              />
+                            </label>
+                          </div>
+                          <p className="muted">
+                            Суббота и воскресенье · {newPerDay * 2} слотов всего
+                          </p>
+                          <div className="slot-preview">
+                            {Array.from(
+                              {
+                                length: Math.min(
+                                  20,
+                                  Math.max(0, newPerDay || 0),
+                                ),
+                              },
+                              (_, i) => {
+                                const n =
+                                  Number(newStart.slice(0, 2)) * 60 +
+                                  Number(newStart.slice(3)) +
+                                  i * 70;
+                                return (
+                                  <span key={i}>
+                                    {n < 1440
+                                      ? String(Math.floor(n / 60)).padStart(
+                                          2,
+                                          "0",
+                                        ) +
+                                        ":" +
+                                        String(n % 60).padStart(2, "0")
+                                      : "После полуночи"}
+                                  </span>
+                                );
+                              },
+                            )}
+                          </div>
+                          {newSaturday && (
+                            <small>
+                              Даты: {shortDate(newSaturday)} и{" "}
+                              {shortDate(
+                                new Date(
+                                  Date.parse(newSaturday + "T12:00:00Z") +
+                                    86400000,
+                                )
+                                  .toISOString()
+                                  .slice(0, 10),
+                              )}
+                            </small>
+                          )}
+                        </fieldset>
+                        <label className="wide">
+                          Импорт Excel (.xlsx): «Команда 1», «Команда 2»
+                          <a href="/pairs-template.xlsx" download>
+                            Скачать шаблон Excel ↓
+                          </a>
+                          <input
+                            type="file"
+                            accept=".xlsx"
+                            onChange={(e) =>
+                              e.target.files?.[0] &&
+                              importExcel(e.target.files[0])
+                            }
+                          />
+                        </label>
+                        <label className="wide">
+                          16 пар: Команда 1;Команда 2 — каждая на новой строке
+                          <textarea
+                            value={pairs}
+                            onChange={(e) => setPairs(e.target.value)}
+                            rows={8}
+                            required
+                          />
+                        </label>
+                        <button disabled={busy}>Создать тур</button>
                       </form>
-                    )}
-                  {r.matches.map((m) => (
-                    <div className="admin-match" key={m.id}>
-                      <div>
-                        <Pair m={m} />
-                        {m.slot && count(m.slot).length > 1 && (
-                          <small className="danger">
-                            Конфликт — выберите другое время одной из пар
-                          </small>
-                        )}
-                      </div>
-                      <select
-                        aria-label={"Время " + team(m.a)?.name}
-                        value={m.slot || ""}
-                        disabled={busy}
-                        onChange={(e) =>
-                          action({
-                            type: "assign",
-                            round: r.id,
-                            match: m.id,
-                            slot: e.target.value,
-                          })
-                        }
-                      >
-                        <option value="">Не назначено</option>
-                        {r.slots.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.date} {s.time}{" "}
-                            {count(s.id).length ? "· занято" : ""}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  ))}
-                </section>
-                <section className="panel">
-                  <h3>Слоты тура</h3>
-                  <div className="slot-chips">
-                    {r.slots.map((s) => (
-                      <button
-                        key={s.id}
-                        title="Удалить неиспользуемый слот"
-                        disabled={busy}
-                        onClick={() =>
-                          action({
-                            type: "deleteSlot",
-                            round: r.id,
-                            slot: s.id,
-                          })
-                        }
-                      >
-                        {s.date.slice(5)} {s.time} ×
-                      </button>
-                    ))}
+                    </section>
                   </div>
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const f = new FormData(e.currentTarget);
-                      action({
-                        type: "slot",
-                        round: r.id,
-                        date: f.get("date"),
-                        time: f.get("time"),
-                      });
-                    }}
-                  >
-                    <label>
-                      Дата
-                      <input
-                        type="date"
-                        name="date"
-                        required
-                        defaultValue={r.saturday}
-                      />
-                    </label>
-                    <label>
-                      Начало, МСК
-                      <input
-                        type="time"
-                        name="time"
-                        required
-                        defaultValue="10:00"
-                      />
-                    </label>
-                    <button disabled={busy}>Добавить слот</button>
-                  </form>
-                </section>
-                <section className="panel">
-                  <h3>Создать тур</h3>
-                  <form
-                    className="new-round"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const f = new FormData(e.currentTarget);
-                      try {
-                        const parsed = pairs
-                          .trim()
-                          .split("\n")
-                          .map((line) =>
-                            line.split(";").map((name) => {
-                              const t = teams.find(
-                                (t) =>
-                                  t.name.toLowerCase() ===
-                                  name.trim().toLowerCase(),
-                              );
-                              if (!t)
-                                throw Error("Неизвестная команда: " + name);
-                              return t.id;
-                            }),
-                          );
-                        action({
-                          type: "round",
-                          name: f.get("name"),
-                          saturday: f.get("saturday"),
-                          opens: f.get("opens"),
-                          deadline: f.get("deadline"),
-                          pairs: parsed,
-                        });
-                      } catch (e) {
-                        setError((e as Error).message);
-                      }
-                    }}
-                  >
-                    <label>
-                      Название
-                      <input name="name" placeholder="2 тур" required />
-                    </label>
-                    <label>
-                      Суббота
-                      <input
-                        name="saturday"
-                        type="date"
-                        required
-                        onChange={(e) => {
-                          if (!e.target.value) return;
-                          const f = e.target.form;
-                          const w = defaultWindow(e.target.value);
-                          if (f) {
-                            (
-                              f.elements.namedItem("opens") as HTMLInputElement
-                            ).value = w.opens;
-                            (
-                              f.elements.namedItem(
-                                "deadline",
-                              ) as HTMLInputElement
-                            ).value = w.deadline;
-                          }
-                        }}
-                      />
-                    </label>
-                    <label>
-                      Открытие, МСК
-                      <input name="opens" type="datetime-local" required />
-                    </label>
-                    <label>
-                      Дедлайн, МСК
-                      <input name="deadline" type="datetime-local" required />
-                    </label>
-                    <label className="wide">
-                      Импорт Excel (.xlsx): «Команда 1», «Команда 2»
-                      <a href="/pairs-template.xlsx" download>
-                        Скачать шаблон Excel ↓
-                      </a>
-                      <input
-                        type="file"
-                        accept=".xlsx"
-                        onChange={(e) =>
-                          e.target.files?.[0] && importExcel(e.target.files[0])
-                        }
-                      />
-                    </label>
-                    <label className="wide">
-                      16 пар: Команда 1;Команда 2 — каждая на новой строке
-                      <textarea
-                        value={pairs}
-                        onChange={(e) => setPairs(e.target.value)}
-                        rows={8}
-                        required
-                      />
-                    </label>
-                    <button disabled={busy}>Создать тур</button>
-                  </form>
-                </section>
-                <section className="panel">
-                  <h3>Команды и капитаны</h3>
-                  <p className="muted">
-                    Telegram ID капитан получает при входе через бота. Один
-                    пользователь — одна команда.
-                  </p>
-                  {teams.map((t) => (
-                    <form
-                      className="team-form"
-                      key={t.id}
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const f = new FormData(e.currentTarget);
-                        action({
-                          type: "team",
-                          id: t.id,
-                          name: f.get("name"),
-                          telegramId: f.get("telegramId"),
-                          logo: f.get("logo"),
-                        });
-                      }}
-                    >
-                      <input
-                        name="name"
-                        aria-label="Название команды"
-                        defaultValue={t.name}
-                        required
-                      />
-                      <input
-                        name="telegramId"
-                        aria-label={"Telegram ID " + t.name}
-                        defaultValue={t.telegramId}
-                        placeholder="Telegram ID"
-                      />
-                      <input
-                        name="logo"
-                        type="url"
-                        aria-label={"Логотип " + t.name}
-                        defaultValue={t.logo}
-                        placeholder="https://… логотип"
-                      />
-                      <button disabled={busy}>Сохранить</button>
-                    </form>
-                  ))}
-                </section>
+                )}
+                {adminView === "teams" && (
+                  <div className="teams-workspace">
+                    <p className="muted">
+                      Общий справочник для всех туров. Привязки капитанов
+                      сохраняются между турами.
+                    </p>{" "}
+                    <section className="panel">
+                      <h3>Команды и капитаны</h3>
+                      <p className="muted">
+                        Telegram ID капитан получает при входе через бота. Один
+                        пользователь — одна команда.
+                      </p>
+                      {teams.map((t) => (
+                        <form
+                          className="team-form"
+                          key={t.id}
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            const f = new FormData(e.currentTarget);
+                            action({
+                              type: "team",
+                              id: t.id,
+                              name: f.get("name"),
+                              telegramId: f.get("telegramId"),
+                              logo: f.get("logo"),
+                            });
+                          }}
+                        >
+                          <input
+                            name="name"
+                            aria-label="Название команды"
+                            defaultValue={t.name}
+                            required
+                          />
+                          <input
+                            name="telegramId"
+                            aria-label={"Telegram ID " + t.name}
+                            defaultValue={t.telegramId}
+                            placeholder="Telegram ID"
+                          />
+                          <input
+                            name="logo"
+                            type="url"
+                            aria-label={"Логотип " + t.name}
+                            defaultValue={t.logo}
+                            placeholder="https://… логотип"
+                          />
+                          <button disabled={busy}>Сохранить</button>
+                        </form>
+                      ))}
+                    </section>
+                  </div>
+                )}
               </div>
             )}
           </>

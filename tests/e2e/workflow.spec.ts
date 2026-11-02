@@ -119,6 +119,9 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
   await page.getByRole("button", { name: "Расписание", exact: true }).click();
   await expect(page.locator(".card")).toHaveCount(16);
   await expect(page.locator(".match")).toHaveCount(16);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const geometry = await page.locator(".card").first().boundingBox();
+  expect(geometry!.height).toBeLessThan(240);
   await page.screenshot({ path: "data/desktop.png", fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect
@@ -129,8 +132,19 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
   await page.screenshot({ path: "data/mobile.png", fullPage: true });
   await page.getByRole("button", { name: "Организатор", exact: true }).click();
   await page.getByRole("button", { name: "Управление турниром" }).click();
+  await expect(page.locator(".round-workspace .scope-heading")).toContainText(
+    "1 тур",
+  );
+  await expect(
+    page.getByRole("heading", { name: "Создать тур и слоты", exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "＋ Новый тур", exact: true }).click();
+  await expect(page.locator(".round-workspace")).toHaveCount(0);
   const create = page.locator("section.panel").filter({
-    has: page.getByRole("heading", { name: "Создать тур", exact: true }),
+    has: page.getByRole("heading", {
+      name: "Создать тур и слоты",
+      exact: true,
+    }),
   });
   await create.locator("[name=name]").fill("2 тур");
   await create.locator("[name=saturday]").fill("2026-11-14");
@@ -138,6 +152,19 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
   await expect(create.locator("[name=deadline]")).toHaveValue(
     "2026-11-10T18:00",
   );
+  await create.locator("[name=start]").fill("09:00");
+  await create.locator("[name=perDay]").fill("10");
+  await expect(create.locator(".slot-preview span")).toHaveCount(10);
+  await page
+    .getByRole("button", { name: "Выбранный тур", exact: true })
+    .click();
+  await expect(page.locator(".scope-heading")).toContainText("1 тур");
+  await page.getByRole("button", { name: "＋ Новый тур", exact: true }).click();
+  await expect(create.locator("[name=opens]")).toHaveValue("2026-11-09T12:00");
+  await expect(create.locator("[name=name]")).toHaveValue("2 тур");
+  await expect(create.locator("[name=start]")).toHaveValue("09:00");
+
+  await page.screenshot({ path: "data/admin-new-mobile.png", fullPage: true });
   await create
     .locator("input[type=file]")
     .setInputFiles("public/pairs-template.xlsx");
@@ -149,6 +176,22 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
   const stateAfter = await (await page.request.get("/api/state")).json();
   expect(stateAfter.rounds).toHaveLength(2);
   expect(stateAfter.rounds[1].matches).toHaveLength(16);
+  expect(stateAfter.rounds[0].slots).toHaveLength(16);
+  expect(stateAfter.rounds[1].slots).toHaveLength(20);
+  expect(stateAfter.rounds[1].slots[0].time).toBe("09:00");
+  await expect(page.locator(".scope-heading")).toContainText("2 тур");
+  await expect(
+    page.getByRole("combobox", { name: "Тур", exact: true }),
+  ).toHaveValue(stateAfter.rounds[1].id);
+  await page
+    .getByRole("combobox", { name: "Тур", exact: true })
+    .selectOption("1");
+  await expect(page.locator(".scope-heading")).toContainText("1 тур");
+  await expect(page.locator(".round-metrics")).toContainText("16 слотов");
+  await page.screenshot({
+    path: "data/admin-current-mobile.png",
+    fullPage: true,
+  });
   expect(errors).toEqual([]);
   await context.close();
 });

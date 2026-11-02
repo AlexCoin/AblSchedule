@@ -87,6 +87,7 @@ export function makeRound(
   opens: string,
   deadline: string,
   pairs: string[][],
+  plan: { start?: string; perDay?: number } = {},
 ): Round {
   if (
     !name.trim() ||
@@ -103,9 +104,21 @@ export function makeRound(
   const sunday = new Date(Date.parse(saturday + "T12:00:00Z") + 86400000)
     .toISOString()
     .slice(0, 10);
+  const start = plan.start ?? "10:00",
+    perDay = plan.perDay ?? 8;
+  if (
+    !/^([01]\d|2[0-3]):[0-5]\d$/.test(start) ||
+    !Number.isInteger(perDay) ||
+    perDay < 8 ||
+    perDay > 20
+  )
+    throw Error("Проверьте начало и количество слотов: от 8 до 20 в день");
+  const first = Number(start.slice(0, 2)) * 60 + Number(start.slice(3));
+  if (first + perDay * 70 > 1440)
+    throw Error("Все 70-минутные игры должны завершаться до полуночи");
   const slots = [saturday, sunday].flatMap((date) =>
-    Array.from({ length: 8 }, (_, i) => {
-      const n = 600 + i * 70;
+    Array.from({ length: perDay }, (_, i) => {
+      const n = first + i * 70;
       const time =
         String(Math.floor(n / 60)).padStart(2, "0") +
         ":" +
@@ -218,6 +231,7 @@ export function apply(s: State, actor: Actor, input: any, now = Date.now()) {
         input.opens,
         input.deadline,
         pairs,
+        { start: input.start, perDay: input.perDay },
       ),
     );
     return;
