@@ -9,7 +9,9 @@ if errorlevel 1 (
 )
 node -e "if(Number(process.versions.node.split('.')[0])<24){console.error('Node.js 24 or newer is required');process.exit(1)}"
 if errorlevel 1 goto failed
-call npm.cmd ci
+call npm.cmd ci --include=dev
+if errorlevel 1 goto failed
+node -e "require.resolve('tsx');require.resolve('next')"
 if errorlevel 1 goto failed
 if not exist .env.local (
   node -e "const fs=require('node:fs'),crypto=require('node:crypto');fs.writeFileSync('.env.local','APP_URL=http://localhost:3000\nDEMO_MODE=true\nDATABASE_PATH=data/demo.sqlite\nSESSION_SECRET='+crypto.randomBytes(32).toString('hex')+'\n',{flag:'wx'})"
@@ -28,6 +30,7 @@ if errorlevel 1 goto failed
 exit /b 0
 :failed
 echo.
-echo Startup failed. Send the error text from this window.
+echo Startup failed. Do not run demo:seed until npm ci succeeds.
+echo For npm network errors: run npm.cmd ping and send the FIRST npm error line.
 pause
 exit /b 1
