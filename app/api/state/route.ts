@@ -1,3 +1,4 @@
+import { preliminaryBookings } from "../../../lib/preliminary";
 import { actor } from "../../../lib/auth";
 import { transaction } from "../../../lib/db";
 export const dynamic = "force-dynamic";
@@ -16,6 +17,7 @@ export async function GET() {
         .filter((r) => user || r.published)
         .map((r) => ({
           ...r,
+          preliminary: user ? preliminaryBookings(r) : [],
           matches: r.matches.map((m) => ({
             ...m,
             offers:

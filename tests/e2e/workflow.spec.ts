@@ -37,6 +37,33 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
     .locator('[data-slot="2026-11-07T10:00"]')
     .getByRole("button", { name: "Выбрать этот слот", exact: true })
     .click();
+  await page.getByRole("button", { name: "Капитан A", exact: true }).click();
+  const tentative = page.locator('[data-slot="2026-11-07T10:00"]');
+  await expect(tentative).toHaveClass(/tentative-card/);
+  await expect(tentative).toContainText("Предварительная заявка");
+  await expect(tentative).toContainText("АИТ");
+  await expect(
+    tentative.getByRole("button", { name: "Выбрать этот слот", exact: true }),
+  ).toBeEnabled();
+  const visible = await (await page.request.get("/api/state")).json();
+  expect(
+    visible.rounds[0].matches.find((m: any) => m.id === "2").offers,
+  ).toEqual([]);
+  expect(visible.rounds[0].preliminary).toContainEqual({
+    matchId: "2",
+    slot: "2026-11-07T10:00",
+    proposedBy: ["3"],
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    )
+    .toBe(true);
+  await page.screenshot({
+    path: "data/preliminary-mobile.png",
+    fullPage: true,
+  });
   await page.getByRole("button", { name: "Капитан D", exact: true }).click();
   await expect(page.locator(".my-match")).toContainText("АТВ Last");
   await page
@@ -44,6 +71,10 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
     .getByRole("button", { name: "Подтвердить этот слот", exact: true })
     .click();
   await expect(page.getByText("Согласовано:", { exact: false })).toBeVisible();
+  await expect(
+    page.locator('[data-slot="2026-11-07T10:00"] .preliminary-bookings'),
+  ).toHaveCount(0);
+
   await page.getByRole("button", { name: "Капитан A", exact: true }).click();
   await expect(page.getByRole("button", { name: "Мой матч" })).toHaveCount(0);
   const forbiddenMatch = await page.request.post("/api/action", {

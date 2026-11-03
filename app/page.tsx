@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import type { PreliminaryBooking } from "../lib/preliminary";
 import type { Round, Match, Team } from "../lib/domain";
 import { defaultWindow } from "../lib/domain";
 type ViewTeam = Team & { mine: boolean };
@@ -7,7 +8,7 @@ type Data = {
   user: { id: string; admin: boolean } | null;
   demo: boolean;
   teams: ViewTeam[];
-  rounds: Round[];
+  rounds: (Round & { preliminary: PreliminaryBooking[] })[];
 };
 const shortDate = (s: string) =>
   new Date(s + "T12:00:00+03:00").toLocaleDateString("ru-RU", {
@@ -447,11 +448,33 @@ export default function Home() {
                     </button>
                   ))}
                 </div>
+                {data.user && (
+                  <div className="calendar-legend">
+                    <span>
+                      <i className="legend-tentative" />
+                      Предварительная заявка
+                    </span>
+                    <span>
+                      <i className="legend-confirmed" />
+                      Согласовано
+                    </span>
+                    <span>
+                      <i className="legend-conflict" />
+                      Конфликт
+                    </span>
+                    <small>
+                      Предварительная заявка не блокирует выбор слота.
+                    </small>
+                  </div>
+                )}
                 <div className="cards">
                   {r.slots
                     .filter((s) => day === "all" || day === s.date)
                     .map((s) => {
                       const matches = count(s.id);
+                      const pending = (r.preliminary || []).filter(
+                        (p) => p.slot === s.id,
+                      );
                       const theirs =
                         !!my &&
                         !!mine?.offers.some(
@@ -468,6 +491,9 @@ export default function Home() {
                           className={
                             "card " +
                             (matches.length > 1 ? "conflict " : "") +
+                            (pending.length && !matches.length
+                              ? "tentative-card "
+                              : "") +
                             (theirs
                               ? "incoming-card "
                               : own
@@ -492,10 +518,59 @@ export default function Home() {
                                 <Badge id={m.b} />
                               </div>
                             ))
+                          ) : pending.length ? (
+                            <div className="pending-preview">
+                              {pending.map((p) => {
+                                const m = r.matches.find(
+                                  (m) => m.id === p.matchId,
+                                )!;
+                                return (
+                                  <div className="match" key={p.matchId}>
+                                    <Badge id={m.a} />
+                                    <span className="vs">VS</span>
+                                    <Badge id={m.b} />
+                                  </div>
+                                );
+                              })}
+                            </div>
                           ) : (
                             <div className="free">
                               <span>— : —</span>
                               <p>Свободный слот</p>
+                            </div>
+                          )}
+                          {pending.length > 0 && (
+                            <div className="preliminary-bookings">
+                              <strong>
+                                ◷{" "}
+                                {pending.length > 1
+                                  ? "Предварительные заявки"
+                                  : "Предварительная заявка"}
+                              </strong>
+                              {pending.map((p) => {
+                                const m = r.matches.find(
+                                  (m) => m.id === p.matchId,
+                                )!;
+                                return (
+                                  <div key={p.matchId}>
+                                    {matches.length > 0 && (
+                                      <span className="pending-pair">
+                                        <Pair m={m} />
+                                      </span>
+                                    )}
+                                    <small>
+                                      {p.proposedBy.length > 1
+                                        ? "Предложили"
+                                        : "Предложила"}
+                                      :{" "}
+                                      {p.proposedBy
+                                        .map((id) => team(id)?.name)
+                                        .join(", ")}
+                                      . Ждём подтверждения соперника.
+                                    </small>
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
                           <div className="card-bottom">
@@ -518,7 +593,9 @@ export default function Home() {
                               : matches.length
                                 ? "● " +
                                   (r.published ? "В расписании" : "Согласовано")
-                                : "○ Доступен"}
+                                : pending.length
+                                  ? "◷ Ожидает подтверждения"
+                                  : "○ Доступен"}
                           </div>
                           {my && mine && (
                             <div className="card-actions">

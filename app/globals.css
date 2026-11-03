@@ -1281,3 +1281,96 @@ body {
     max-width: none;
   }
 }
+.calendar-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  margin: 0 0 17px;
+  font-size: 10px;
+  color: #635f56;
+}
+.calendar-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 650;
+}
+.calendar-legend i {
+  height: 10px;
+  width: 10px;
+  border-radius: 3px;
+  border: 1px solid;
+}
+.legend-tentative {
+  background: #fff1d3;
+  border-color: #c89536 !important;
+}
+.legend-confirmed {
+  background: #e2eddf;
+  border-color: #809b76 !important;
+}
+.legend-conflict {
+  background: #ffe4dc;
+  border-color: #cd8778 !important;
+}
+.calendar-legend small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.cards .tentative-card {
+  border: 1.5px dashed #ba8b38;
+  background: linear-gradient(#fff4d9c9, #fff9edb8), url("/paper.svg");
+}
+.preliminary-bookings {
+  border: 1px dashed #d5ad6c;
+  background: #fff5dfb8;
+  border-radius: 7px;
+  padding: 7px 8px;
+  margin-bottom: 9px;
+  color: #7c541d;
+  display: grid;
+  gap: 6px;
+}
+.preliminary-bookings > strong {
+  font-size: 10px;
+  line-height: 1.4;
+}
+.preliminary-bookings small {
+  display: block;
+  font-size: 9px;
+  line-height: 1.5;
+}
+.pending-pair {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+.cards .pending-preview .match {
+  padding: 9px 0 7px;
+  min-height: 70px;
+}
+.pending-preview + .preliminary-bookings {
+  margin-top: 0;
+}
+@media (max-width: 760px) {
+  .calendar-legend {
+    gap: 8px 12px;
+    font-size: 9px;
+  }
+  .calendar-legend small {
+    font-size: 9px;
+    flex-basis: 100%;
+  }
+  .preliminary-bookings {
+    padding: 6px;
+  }
+  .preliminary-bookings > strong {
+    font-size: 9px;
+  }
+  .preliminary-bookings small,
+  .pending-pair {
+    font-size: 8px;
+  }
+}

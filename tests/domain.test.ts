@@ -1,3 +1,4 @@
+import { preliminaryBookings } from "../lib/preliminary";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { seed, apply } from "../lib/domain";
@@ -189,4 +190,34 @@ test("new round slot plan is isolated and validated", () => {
   assert.throws(() => apply(s, admin, { ...input, start: "23:00" }, now));
   assert.throws(() => apply(s, admin, { ...input, perDay: 7 }, now));
   assert.throws(() => apply(s, admin, { ...input, perDay: 8.5 }, now));
+});
+
+test("preliminary interest is visible per pair and slot until agreement", () => {
+  const s = setup(),
+    r = s.rounds[0],
+    slot = r.slots[0].id;
+  apply(s, a, { type: "offer", round: "1", match: "1", slot }, now);
+  apply(s, a, { type: "offer", round: "1", match: "1", slot }, now);
+  apply(
+    s,
+    a,
+    { type: "offer", round: "1", match: "1", slot: r.slots[1].id },
+    now,
+  );
+  apply(
+    s,
+    { id: "tg3", admin: false },
+    { type: "offer", round: "1", match: "2", slot },
+    now,
+  );
+  assert.equal(preliminaryBookings(r).length, 3);
+  assert.deepEqual(preliminaryBookings(r)[0], {
+    matchId: "1",
+    slot,
+    proposedBy: ["1"],
+  });
+  apply(s, b, { type: "accept", round: "1", match: "1", slot }, now);
+  assert.deepEqual(preliminaryBookings(r), [
+    { matchId: "2", slot, proposedBy: ["3"] },
+  ]);
 });
