@@ -1423,3 +1423,37 @@ header {
     width: 100%;
   }
 }
+.division-tag {
+  font-size: 8px;
+  font-weight: 650;
+  color: var(--muted);
+  line-height: 1.1;
+}
+.catalog-download {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--red);
+  margin: 0 0 12px;
+}
+.catalog-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0 18px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.catalog-summary label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+}
+.catalog-summary input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--red);
+}

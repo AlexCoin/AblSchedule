@@ -1,0 +1,14 @@
+{
+  "sourceUrl": "https://ablforpeople.com/divisions",
+  "season": "Сезон 2026-2027",
+  "seasonId": 231,
+  "source": "User-provided saved page Downloads.zip",
+  "archiveSha256": "bb7e669fef519fdc9fc4c3ead2a719c69cd57fc1d8e3df6a9a59fbbb5aa8722c",
+  "divisions": {
+    "Pale": 8,
+    "Slow": 8,
+    "Rook": 8,
+    "Last": 8
+  },
+  "note": "Team image files are not in the supplied archive. Official image URLs were read from its embedded page data."
+}

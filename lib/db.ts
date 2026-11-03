@@ -1,3 +1,4 @@
+import { syncBundledCatalog } from "./bundled-catalog";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -52,6 +53,7 @@ export async function transaction<T>(fn: (s: State) => T): Promise<T> {
       ]);
       const q = await c.query("SELECT value FROM app WHERE id=1 FOR UPDATE");
       const s = JSON.parse(q.rows[0].value);
+      syncBundledCatalog(s);
       const result = fn(s);
       await c.query("UPDATE app SET value=$1 WHERE id=1", [JSON.stringify(s)]);
       await c.query("COMMIT");
@@ -68,6 +70,7 @@ export async function transaction<T>(fn: (s: State) => T): Promise<T> {
     const s = JSON.parse(
       (sqlite.prepare("SELECT value FROM app WHERE id=1").get() as any).value,
     );
+    syncBundledCatalog(s);
     const result = fn(s);
     sqlite.prepare("UPDATE app SET value=? WHERE id=1").run(JSON.stringify(s));
     sqlite.exec("COMMIT");

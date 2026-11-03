@@ -10,7 +10,12 @@ export function teamMenu(
   const eligible = selectableTeams(state.teams);
   const divisions = [
     ...new Set(eligible.map((t) => t.division || "Другие")),
-  ].sort((a, b) => a.localeCompare(b, "ru"));
+  ].sort((a, b) => {
+    const order = ["Pale", "Slow", "Rook", "Last"];
+    const x = order.indexOf(a),
+      y = order.indexOf(b);
+    return (x < 0 ? 99 : x) - (y < 0 ? 99 : y) || a.localeCompare(b, "ru");
+  });
   const mine = state.teams.filter((t) => t.telegramId === userId);
   const summary = mine.length
     ? "Ваши команды: " +

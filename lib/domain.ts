@@ -5,6 +5,7 @@ export type Team = {
   logo: string;
   division?: string;
   sourceUrl?: string;
+  sourceTeamKey?: string;
 };
 export type Match = {
   id: string;
@@ -23,7 +24,11 @@ export type Round = {
   slots: { id: string; date: string; time: string }[];
   matches: Match[];
 };
-export type State = { teams: Team[]; rounds: Round[] };
+export type State = {
+  teams: Team[];
+  rounds: Round[];
+  catalogRevision?: string;
+};
 export type Actor = { id: string; admin: boolean };
 export function seed(): State {
   const names = [

@@ -35,6 +35,7 @@ export default function Home() {
     [login, setLogin] = useState(""),
     [pairs, setPairs] = useState("");
   const [activeTeamId, setActiveTeamId] = useState("");
+  const [showLegacyTeams, setShowLegacyTeams] = useState(false);
   const [telegramMode, setTelegramMode] = useState(false);
   const [telegramLoading, setTelegramLoading] = useState(false);
   const refreshEnabled = useRef(false);
@@ -153,6 +154,11 @@ export default function Home() {
   }
   const teams = data?.teams || [];
   const r = data?.rounds.find((r) => r.id === roundId) || data?.rounds.at(-1);
+  const officialTeams = teams.filter(
+    (t) => t.sourceUrl === "https://ablforpeople.com/divisions",
+  );
+  const adminTeams =
+    officialTeams.length && !showLegacyTeams ? officialTeams : teams;
   const team = (id: string) => teams.find((t) => t.id === id);
   const myTeams = teams.filter((t) => t.mine);
   const my =
@@ -183,6 +189,7 @@ export default function Home() {
           )}
         </div>
         <strong>{t?.name}</strong>
+        {t?.division && <small className="division-tag">{t.division}</small>}
       </div>
     );
   }
@@ -1186,11 +1193,39 @@ export default function Home() {
                     </p>{" "}
                     <section className="panel">
                       <h3>Команды и капитаны</h3>
+                      <a
+                        className="catalog-download"
+                        href="/abl-teams.csv"
+                        download
+                      >
+                        Скачать список Pale, Slow, Rook и Last для Excel ↓
+                      </a>
                       <p className="muted">
                         Telegram ID капитан получает при входе через бота. Один
                         капитан может представлять несколько команд.
                       </p>
-                      {teams.map((t) => (
+                      {officialTeams.length > 0 && (
+                        <div className="catalog-summary">
+                          <span>
+                            Официальный каталог: {officialTeams.length} команды
+                            · Pale, Slow, Rook, Last
+                          </span>
+                          {teams.length > officialTeams.length && (
+                            <label>
+                              <input
+                                type="checkbox"
+                                checked={showLegacyTeams}
+                                onChange={(e) =>
+                                  setShowLegacyTeams(e.target.checked)
+                                }
+                              />
+                              Показать также старые команды из сохранённых туров
+                              ({teams.length - officialTeams.length})
+                            </label>
+                          )}
+                        </div>
+                      )}
+                      {adminTeams.map((t) => (
                         <form
                           className="team-form"
                           key={t.id}

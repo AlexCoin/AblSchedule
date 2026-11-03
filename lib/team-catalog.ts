@@ -5,6 +5,7 @@ export type CatalogTeam = {
   division: string;
   logo: string;
   sourceUrl: string;
+  sourceTeamKey?: string;
 };
 const divisions = new Set(["Pale", "Slow", "Rook", "Last"]);
 const normalize = (value: string) =>
@@ -17,6 +18,7 @@ const normalize = (value: string) =>
 export function importTeamCatalog(state: State, rows: CatalogTeam[]) {
   if (!Array.isArray(rows) || !rows.length) throw Error("Каталог команд пуст");
   const keys = new Set<string>();
+  const sourceKeys = new Set<string>();
   for (const row of rows) {
     if (
       typeof row.name !== "string" ||
@@ -27,8 +29,28 @@ export function importTeamCatalog(state: State, rows: CatalogTeam[]) {
       throw Error(
         "Нужны команды дивизионов Pale, Slow, Rook и Last с источником ablforpeople.com/divisions",
       );
-    if (!/^\/team-logos\/[a-zA-Z0-9_-]+\.png$/.test(row.logo))
-      throw Error("Логотип должен быть загружен локально в /team-logos/*.png");
+    const local = /^\/team-logos\/[a-zA-Z0-9_-]+\.png$/.test(row.logo);
+    let remote = false;
+    try {
+      const url = new URL(row.logo);
+      remote =
+        url.origin === "https://fs.mtgame.ru" &&
+        !url.username &&
+        !url.password &&
+        !url.search &&
+        !url.hash &&
+        /\.png$/i.test(url.pathname);
+    } catch {}
+    if (!local && !remote)
+      throw Error("Логотип: локальный PNG или официальный PNG с fs.mtgame.ru");
+    if (
+      row.sourceTeamKey !== undefined &&
+      (!/^(Pale|Slow|Rook|Last):\d+$/.test(row.sourceTeamKey) ||
+        !row.sourceTeamKey.startsWith(row.division + ":") ||
+        sourceKeys.has(row.sourceTeamKey))
+    )
+      throw Error("Некорректный идентификатор команды источника");
+    if (row.sourceTeamKey) sourceKeys.add(row.sourceTeamKey);
     const key = row.division + ":" + normalize(row.name);
     if (keys.has(key)) throw Error("Команда повторяется в каталоге");
     keys.add(key);
@@ -38,6 +60,9 @@ export function importTeamCatalog(state: State, rows: CatalogTeam[]) {
   let added = 0,
     updated = 0;
   for (const row of rows) {
+    const sourceMatch = row.sourceTeamKey
+      ? state.teams.find((t) => t.sourceTeamKey === row.sourceTeamKey)
+      : undefined;
     const exact = state.teams.find(
       (t) =>
         normalize(t.name) === normalize(row.name) &&
@@ -46,13 +71,20 @@ export function importTeamCatalog(state: State, rows: CatalogTeam[]) {
     const legacy = state.teams.filter(
       (t) => normalize(t.name) === normalize(row.name) && !t.division,
     );
-    const team = exact || (legacy.length === 1 ? legacy[0] : undefined);
+    const team =
+      sourceMatch ||
+      exact ||
+      (legacy.length === 1 &&
+      rows.filter((r) => normalize(r.name) === normalize(row.name)).length === 1
+        ? legacy[0]
+        : undefined);
     if (team) {
       Object.assign(team, {
         name: row.name.trim(),
         division: row.division,
         logo: row.logo,
         sourceUrl: row.sourceUrl,
+        ...(row.sourceTeamKey ? { sourceTeamKey: row.sourceTeamKey } : {}),
       });
       updated++;
     } else {
@@ -71,6 +103,7 @@ export function importTeamCatalog(state: State, rows: CatalogTeam[]) {
         logo: row.logo,
         sourceUrl: row.sourceUrl,
         telegramId: "",
+        ...(row.sourceTeamKey ? { sourceTeamKey: row.sourceTeamKey } : {}),
       });
       added++;
     }

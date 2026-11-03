@@ -3,17 +3,28 @@ import { resolve } from "node:path";
 import { importTeamCatalog, type CatalogTeam } from "../lib/team-catalog";
 import { transaction } from "../lib/db";
 async function main() {
-  const path = process.argv[2];
+  const path = process.argv[2] || "catalog/abl-teams.json";
   if (!path)
     throw Error(
       "Укажите путь к проверенному JSON-каталогу с локальными логотипами",
     );
-  const rows = JSON.parse(readFileSync(path, "utf8")) as CatalogTeam[];
+  const input = JSON.parse(readFileSync(path, "utf8"));
+  if (!Array.isArray(input)) throw Error("Ожидается массив команд");
+  const rows = (input as (CatalogTeam & { localLogo?: string })[]).map(
+    (row) => ({
+      ...row,
+      logo:
+        row.localLogo &&
+        /^\/team-logos\/[a-zA-Z0-9_-]+\.png$/.test(row.localLogo) &&
+        existsSync(resolve("public", "." + row.localLogo))
+          ? row.localLogo
+          : row.logo,
+    }),
+  );
   if (!Array.isArray(rows)) throw Error("Ожидается массив команд");
   for (const row of rows)
     if (
-      typeof row.logo !== "string" ||
-      !/^\/team-logos\/[a-zA-Z0-9_-]+\.png$/.test(row.logo) ||
+      row.logo?.startsWith("/") &&
       !existsSync(resolve("public", "." + row.logo))
     )
       throw Error("Не найден загруженный логотип команды");
