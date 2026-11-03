@@ -31,7 +31,7 @@ export async function configureTelegram() {
   await telegramRequest("setWebhook", {
     url: url + "/api/telegram/webhook",
     secret_token: secret,
-    allowed_updates: ["message"],
+    allowed_updates: ["message", "callback_query"],
     drop_pending_updates: false,
   });
   await telegramRequest("setChatMenuButton", {
@@ -41,7 +41,8 @@ export async function configureTelegram() {
     commands: [
       { command: "start", description: "Открыть приложение ABL" },
       { command: "schedule", description: "Расписание и согласование игр" },
-      { command: "help", description: "Как войти и привязать команду" },
+      { command: "teams", description: "Выбрать свои команды" },
+      { command: "help", description: "Как войти и выбрать команды" },
     ],
   });
   const webhook = await telegramRequest("getWebhookInfo");

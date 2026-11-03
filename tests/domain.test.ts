@@ -106,17 +106,11 @@ test("rescheduling before deadline; published schedule locked for captains", () 
     apply(s, a, { type: "reopen", round: "1", match: "1" }, now),
   );
 });
-test("team binding is one-to-one and imports reject duplicate teams", () => {
+test("captain may represent multiple teams and imports reject duplicate teams", () => {
   const s = setup();
   s.teams[1].telegramId = "123";
-  assert.throws(() =>
-    apply(
-      s,
-      admin,
-      { type: "team", id: "1", name: "A", telegramId: "123" },
-      now,
-    ),
-  );
+  apply(s, admin, { type: "team", id: "1", name: "A", telegramId: "123" }, now);
+  assert.equal(s.teams.filter((t) => t.telegramId === "123").length, 2);
   assert.throws(() =>
     apply(
       s,

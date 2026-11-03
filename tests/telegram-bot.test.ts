@@ -107,6 +107,10 @@ test("setup verifies bot identity and configures webhook, menu and commands", as
     ],
   );
   assert.equal(calls[1].payload.drop_pending_updates, false);
+  assert.deepEqual(calls[1].payload.allowed_updates, [
+    "message",
+    "callback_query",
+  ]);
   assert.equal(
     calls[2].payload.menu_button.web_app.url,
     "https://abl.example.test",

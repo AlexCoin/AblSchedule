@@ -34,6 +34,7 @@ export default function Home() {
     [busy, setBusy] = useState(false),
     [login, setLogin] = useState(""),
     [pairs, setPairs] = useState("");
+  const [activeTeamId, setActiveTeamId] = useState("");
   const [telegramMode, setTelegramMode] = useState(false);
   const [telegramLoading, setTelegramLoading] = useState(false);
   const refreshEnabled = useRef(false);
@@ -108,7 +109,7 @@ export default function Home() {
       const res = await fetch("/api/action", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
+        body: JSON.stringify({ team: my?.id, ...input }),
       });
       const json = await res.json();
       if (!res.ok) throw Error(json.error);
@@ -153,8 +154,16 @@ export default function Home() {
   const teams = data?.teams || [];
   const r = data?.rounds.find((r) => r.id === roundId) || data?.rounds.at(-1);
   const team = (id: string) => teams.find((t) => t.id === id);
-  const my = teams.find((t) => t.mine);
+  const myTeams = teams.filter((t) => t.mine);
+  const my =
+    myTeams.find((t) => t.id === activeTeamId) ||
+    myTeams.find((t) => r?.matches.some((m) => [m.a, m.b].includes(t.id))) ||
+    myTeams[0];
   const mine = r?.matches.find((m) => [m.a, m.b].includes(my?.id || ""));
+  const bothMine =
+    !!mine &&
+    myTeams.some((t) => t.id === mine.a) &&
+    myTeams.some((t) => t.id === mine.b);
   const count = (slot: string) =>
     r?.matches.filter((m) => m.slot === slot) || [];
   const open =
@@ -189,12 +198,20 @@ export default function Home() {
       .trim()
       .split("\n")
       .map((line) =>
-        line.split(";").map((name) => {
-          const t = teams.find(
-            (t) => t.name.toLowerCase() === name.trim().toLowerCase(),
+        line.split(";").map((raw) => {
+          const name = raw.trim().toLowerCase();
+          const found = teams.filter(
+            (t) =>
+              t.name.toLowerCase() === name ||
+              (t.division + " / " + t.name).toLowerCase() === name,
           );
-          if (!t) throw Error("Неизвестная команда: " + name);
-          return t.id;
+          if (found.length !== 1)
+            throw Error(
+              found.length
+                ? "Уточните дивизион: «Pale / Название команды»"
+                : "Неизвестная команда: " + raw,
+            );
+          return found[0].id;
         }),
       );
   }
@@ -428,13 +445,44 @@ export default function Home() {
                 {data.user && !data.user.admin && !my && (
                   <section className="message">
                     Для согласования организатор должен назначить вам команду.
-                    Ваш Telegram ID: <b>{data.user.id}</b>
+                    Ваш Telegram ID: <b>{data.user.id}</b>. В боте используйте
+                    /teams, чтобы выбрать свои команды.. Выберите свои команды
+                    командой /teams в боте.
                   </section>
                 )}
                 {my && !mine && (
                   <section className="message">
                     В этом туре матч вашей команды не назначен.
                   </section>
+                )}
+                {myTeams.length > 0 && (
+                  <div className="captain-team-picker">
+                    <label>
+                      Моя команда
+                      <select
+                        aria-label="Моя команда"
+                        value={my?.id || ""}
+                        onChange={(e) => setActiveTeamId(e.target.value)}
+                      >
+                        {myTeams.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.division ? t.division + " · " : ""}
+                            {t.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <small>
+                      Вы действуете от имени выбранной команды. Другие команды
+                      можно добавить командой /teams в боте.
+                    </small>
+                  </div>
+                )}
+                {bothMine && (
+                  <div className="message">
+                    Обе команды этой пары закреплены за вами. Вы можете
+                    предложить время, но окончательно назначит его организатор.
+                  </div>
                 )}
                 {my && mine && (
                   <section className="my-match">
@@ -675,7 +723,10 @@ export default function Home() {
                                   {!mine.slot && (
                                     <button
                                       disabled={
-                                        busy || !open || (own && !theirs)
+                                        busy ||
+                                        !open ||
+                                        (own && !theirs) ||
+                                        (bothMine && theirs)
                                       }
                                       onClick={() =>
                                         action({
@@ -687,7 +738,9 @@ export default function Home() {
                                       }
                                     >
                                       {theirs
-                                        ? "Подтвердить этот слот"
+                                        ? bothMine
+                                          ? "Назначит организатор"
+                                          : "Подтвердить этот слот"
                                         : own
                                           ? "Слот выбран"
                                           : "Выбрать этот слот"}
@@ -835,7 +888,15 @@ export default function Home() {
                                 defaultValue={r.matches
                                   .map(
                                     (m) =>
-                                      team(m.a)?.name + ";" + team(m.b)?.name,
+                                      (team(m.a)?.division
+                                        ? team(m.a)?.division + " / "
+                                        : "") +
+                                      team(m.a)?.name +
+                                      ";" +
+                                      (team(m.b)?.division
+                                        ? team(m.b)?.division + " / "
+                                        : "") +
+                                      team(m.b)?.name,
                                   )
                                   .join("\n")}
                               />
@@ -954,21 +1015,7 @@ export default function Home() {
                           e.preventDefault();
                           const f = new FormData(e.currentTarget);
                           try {
-                            const parsed = pairs
-                              .trim()
-                              .split("\n")
-                              .map((line) =>
-                                line.split(";").map((name) => {
-                                  const t = teams.find(
-                                    (t) =>
-                                      t.name.toLowerCase() ===
-                                      name.trim().toLowerCase(),
-                                  );
-                                  if (!t)
-                                    throw Error("Неизвестная команда: " + name);
-                                  return t.id;
-                                }),
-                              );
+                            const parsed = parsePairs(pairs);
                             action({
                               type: "round",
                               name: f.get("name"),
@@ -1141,7 +1188,7 @@ export default function Home() {
                       <h3>Команды и капитаны</h3>
                       <p className="muted">
                         Telegram ID капитан получает при входе через бота. Один
-                        пользователь — одна команда.
+                        капитан может представлять несколько команд.
                       </p>
                       {teams.map((t) => (
                         <form
@@ -1155,6 +1202,7 @@ export default function Home() {
                               id: t.id,
                               name: f.get("name"),
                               telegramId: f.get("telegramId"),
+                              division: f.get("division"),
                               logo: f.get("logo"),
                             });
                           }}
@@ -1166,6 +1214,12 @@ export default function Home() {
                             required
                           />
                           <input
+                            name="division"
+                            aria-label={"Дивизион " + t.name}
+                            defaultValue={t.division || ""}
+                            placeholder="Дивизион"
+                          />
+                          <input
                             name="telegramId"
                             aria-label={"Telegram ID " + t.name}
                             defaultValue={t.telegramId}
@@ -1173,7 +1227,8 @@ export default function Home() {
                           />
                           <input
                             name="logo"
-                            type="url"
+                            type="text"
+                            inputMode="url"
                             aria-label={"Логотип " + t.name}
                             defaultValue={t.logo}
                             placeholder="https://… логотип"

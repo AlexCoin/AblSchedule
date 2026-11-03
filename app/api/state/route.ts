@@ -25,7 +25,7 @@ export async function GET() {
               s.teams.some(
                 (t) => t.telegramId === user?.id && [m.a, m.b].includes(t.id),
               )
-                ? m.offers
+                ? m.offers.map((o) => ({ team: o.team, slot: o.slot }))
                 : [],
           })),
         })),

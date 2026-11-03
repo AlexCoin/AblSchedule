@@ -3,12 +3,14 @@ export type Team = {
   name: string;
   telegramId: string;
   logo: string;
+  division?: string;
+  sourceUrl?: string;
 };
 export type Match = {
   id: string;
   a: string;
   b: string;
-  offers: { team: string; slot: string }[];
+  offers: { team: string; slot: string; by?: string }[];
   slot: string | null;
 };
 export type Round = {
@@ -176,6 +178,16 @@ export function apply(s: State, actor: Actor, input: any, now = Date.now()) {
   const admin = () => {
     if (!actor.admin) throw Error("Требуются права организатора");
   };
+  if (input.type === "claimTeam" || input.type === "leaveTeam") {
+    const t = s.teams.find((t) => t.id === input.team);
+    if (!t) throw Error("Команда не найдена");
+    if (t.telegramId && t.telegramId !== actor.id)
+      throw Error(
+        "Команда уже закреплена за другим капитаном. Обратитесь к организатору.",
+      );
+    t.telegramId = input.type === "claimTeam" ? actor.id : "";
+    return;
+  }
   if (input.type === "team") {
     admin();
     const t = s.teams.find((t) => t.id === input.id);
@@ -185,25 +197,31 @@ export function apply(s: State, actor: Actor, input: any, now = Date.now()) {
     if (input.telegramId && !/^\d+$/.test(input.telegramId))
       throw Error("Telegram ID должен быть числом");
     if (
-      input.telegramId &&
-      s.teams.some((x) => x.id !== t.id && x.telegramId === input.telegramId)
+      input.logo &&
+      !/^https:\/\//.test(input.logo) &&
+      !/^\/team-logos\/[a-zA-Z0-9_-]+\.png$/.test(input.logo)
     )
-      throw Error("Пользователь уже назначен другой команде");
-    if (input.logo && !/^https:\/\//.test(input.logo))
       throw Error("Логотип: укажите HTTPS URL");
 
     if (
       s.teams.some(
         (x) =>
           x.id !== t.id &&
-          x.name.toLowerCase() === String(input.name).trim().toLowerCase(),
+          x.name.toLowerCase() === String(input.name).trim().toLowerCase() &&
+          (x.division || "") ===
+            String(input.division ?? t.division ?? "").trim(),
       )
     )
       throw Error("Название команды уже используется");
+    if (input.division !== undefined && typeof input.division !== "string")
+      throw Error("Проверьте дивизион");
     Object.assign(t, {
       name: String(input.name).trim(),
       telegramId: String(input.telegramId || ""),
       logo: String(input.logo || ""),
+      ...(input.division !== undefined
+        ? { division: input.division.trim() }
+        : {}),
     });
     return;
   }
@@ -327,7 +345,12 @@ export function apply(s: State, actor: Actor, input: any, now = Date.now()) {
     m.offers = [];
     return;
   }
-  const t = s.teams.find((t) => t.telegramId === actor.id);
+  const eligible = s.teams.filter(
+    (t) => t.telegramId === actor.id && [m.a, m.b].includes(t.id),
+  );
+  if (!input.team && eligible.length > 1)
+    throw Error("Выберите команду, от имени которой договариваетесь");
+  const t = eligible.find((t) => !input.team || t.id === input.team);
   if (!t || ![m.a, m.b].includes(t.id))
     throw Error("Это не матч вашей команды");
   if (
@@ -345,12 +368,25 @@ export function apply(s: State, actor: Actor, input: any, now = Date.now()) {
   if (!r.slots.some((s) => s.id === input.slot)) throw Error("Слот не найден");
   if (input.type === "offer") {
     if (!m.offers.some((o) => o.team === t.id && o.slot === input.slot))
-      m.offers.push({ team: t.id, slot: input.slot });
+      m.offers.push({ team: t.id, slot: input.slot, by: actor.id });
     return;
   }
   if (input.type === "accept") {
     if (!m.offers.some((o) => o.team !== t.id && o.slot === input.slot))
       throw Error("Подтверждать можно только предложение соперника");
+    if (
+      !m.offers.some(
+        (o) =>
+          o.team !== t.id &&
+          o.slot === input.slot &&
+          (o.by
+            ? o.by !== actor.id
+            : s.teams.find((t) => t.id === o.team)?.telegramId !== actor.id),
+      )
+    )
+      throw Error(
+        "Своё предложение нельзя подтверждать за соперника. Обратитесь к организатору.",
+      );
     m.slot = input.slot;
     m.offers = [];
     return;

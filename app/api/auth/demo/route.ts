@@ -23,9 +23,6 @@ export async function POST(req: Request) {
       throw Error("Для деморежима нужны две пары команд");
     const teamIds = selected.matches.slice(0, 2).flatMap((m) => [m.a, m.b]);
     const demoIds = ["demo-1", "demo-2", "demo-3", "demo-4"];
-    s.teams.forEach((t) => {
-      if (demoIds.includes(t.telegramId)) t.telegramId = "";
-    });
     teamIds.forEach((id, i) => {
       const team = s.teams.find((t) => t.id === id);
       if (team) team.telegramId = demoIds[i];

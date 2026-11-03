@@ -1388,3 +1388,38 @@ header {
   max-width: 560px;
   line-height: 1.7;
 }
+.captain-team-picker {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.captain-team-picker label {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--ink);
+  min-width: 230px;
+}
+.captain-team-picker small {
+  font-size: 10px;
+  color: var(--muted);
+  max-width: 430px;
+  line-height: 1.6;
+}
+.teams-workspace .team-form {
+  grid-template-columns: 1.2fr 0.7fr 1fr 1fr auto;
+}
+@media (max-width: 1050px) {
+  .teams-workspace .team-form {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .teams-workspace .team-form {
+    grid-template-columns: 1fr;
+  }
+  .captain-team-picker label {
+    width: 100%;
+  }
+}

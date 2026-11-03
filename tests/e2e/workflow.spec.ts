@@ -82,6 +82,36 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
     data: { type: "offer", round: "1", match: "2", slot: "2026-11-07T10:00" },
   });
   expect(forbiddenMatch.status()).toBe(400);
+  const claim = await page.request.post("/api/action", {
+    headers: { origin: "http://localhost:3100" },
+    data: { type: "claimTeam", team: "5" },
+  });
+  expect(claim.ok()).toBeTruthy();
+  await page.reload();
+  await expect(
+    page
+      .getByRole("combobox", { name: "Моя команда", exact: true })
+      .locator("option"),
+  ).toHaveCount(2);
+  await page
+    .getByRole("combobox", { name: "Моя команда", exact: true })
+    .selectOption("5");
+  await expect(page.locator(".my-match")).toContainText("Гусарские гоблины");
+  await page
+    .locator('[data-slot="2026-11-07T10:00"]')
+    .getByRole("button", { name: "Выбрать этот слот", exact: true })
+    .click();
+  const multi = await (await page.request.get("/api/state")).json();
+  expect(
+    multi.rounds[0].matches.find((m: any) => m.id === "3").offers,
+  ).toContainEqual({ team: "5", slot: "2026-11-07T10:00" });
+  expect(
+    multi.rounds[0].matches.find((m: any) => m.id === "3").offers[0],
+  ).not.toHaveProperty("by");
+  await page
+    .getByRole("combobox", { name: "Моя команда", exact: true })
+    .selectOption("1");
+  await expect(page.locator(".my-match")).toContainText("Школа ABL");
 
   await expect(page.locator('[data-slot="2026-11-07T10:00"]')).toContainText(
     "Слот уже занят",
