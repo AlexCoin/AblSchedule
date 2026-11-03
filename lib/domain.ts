@@ -1,3 +1,4 @@
+import { validateDivisionPairs } from "./division-pairs";
 export type Team = {
   id: string;
   name: string;
@@ -28,6 +29,7 @@ export type State = {
   teams: Team[];
   rounds: Round[];
   catalogRevision?: string;
+  pairingRevision?: string;
 };
 export type Actor = { id: string; admin: boolean };
 export function seed(): State {
@@ -154,19 +156,7 @@ export function conflicts(r: Round, slot: string) {
   return r.matches.filter((m) => m.slot === slot);
 }
 function validatePairs(s: State, pairs: string[][]) {
-  if (
-    !Array.isArray(pairs) ||
-    pairs.length !== 16 ||
-    pairs.some((p) => !Array.isArray(p) || p.length !== 2)
-  )
-    throw Error("В туре должно быть 16 пар");
-  const ids = pairs.flat();
-  if (
-    ids.length !== 32 ||
-    new Set(ids).size !== 32 ||
-    ids.some((id) => !s.teams.some((t) => t.id === id))
-  )
-    throw Error("Каждая из 32 команд должна участвовать ровно один раз");
+  validateDivisionPairs(s.teams, pairs);
 }
 export function defaultWindow(saturday: string) {
   const date = new Date(saturday + "T12:00:00Z");
@@ -233,19 +223,7 @@ export function apply(s: State, actor: Actor, input: any, now = Date.now()) {
   if (input.type === "round") {
     admin();
     const pairs = input.pairs as string[][];
-    if (
-      !Array.isArray(pairs) ||
-      pairs.length !== 16 ||
-      pairs.some((p) => !Array.isArray(p) || p.length !== 2)
-    )
-      throw Error("В туре должно быть 16 пар");
-    const ids = pairs.flat();
-    if (
-      ids.length !== 32 ||
-      new Set(ids).size !== 32 ||
-      ids.some((id) => !s.teams.some((t) => t.id === id))
-    )
-      throw Error("Каждая из 32 команд должна участвовать ровно один раз");
+    validatePairs(s, pairs);
     s.rounds.push(
       makeRound(
         crypto.randomUUID(),
@@ -265,6 +243,11 @@ export function apply(s: State, actor: Actor, input: any, now = Date.now()) {
     admin();
     if (r.published || r.matches.some((m) => m.slot || m.offers.length))
       throw Error("Пары можно менять до начала переговоров");
+    if (
+      input.expectedPairs &&
+      input.expectedPairs !== JSON.stringify(r.matches.map((m) => [m.a, m.b]))
+    )
+      throw Error("Пары уже изменены. Обновите данные перед сохранением.");
     validatePairs(s, input.pairs);
     r.matches = input.pairs.map(([a, b]: string[], i: number) => ({
       id: String(i + 1),

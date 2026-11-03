@@ -1,5 +1,10 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
+import MatchPairEditor from "../components/MatchPairEditor";
+import {
+  defaultDivisionPairs,
+  validateDivisionPairs,
+} from "../lib/division-pairs";
 import { telegramWebApp } from "../lib/telegram-client";
 import type { PreliminaryBooking } from "../lib/preliminary";
 import type { Round, Match, Team } from "../lib/domain";
@@ -32,8 +37,13 @@ export default function Home() {
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false),
-    [login, setLogin] = useState(""),
-    [pairs, setPairs] = useState("");
+    [login, setLogin] = useState("");
+  const [newPairIds, setNewPairIds] = useState<string[][] | null>(null);
+  const [matchDraft, setMatchDraft] = useState<{
+    roundId: string;
+    baseline: string;
+    pairs: string[][];
+  } | null>(null);
   const [activeTeamId, setActiveTeamId] = useState("");
   const [showLegacyTeams, setShowLegacyTeams] = useState(false);
   const [telegramMode, setTelegramMode] = useState(false);
@@ -116,11 +126,12 @@ export default function Home() {
       if (!res.ok) throw Error(json.error);
       setNotice(json.warning || "Изменения сохранены");
       const next = await refresh();
+      if ((input as { type?: string }).type === "pairs") setMatchDraft(null);
       if ((input as { type?: string }).type === "round" && next) {
         setRoundId(next.rounds.at(-1)!.id);
         setDay("all");
         setAdminView("current");
-        setPairs("");
+        setNewPairIds(null);
         setNewName("");
         setNewSaturday("");
         setNewOpens("");
@@ -160,6 +171,23 @@ export default function Home() {
   const adminTeams =
     officialTeams.length && !showLegacyTeams ? officialTeams : teams;
   const team = (id: string) => teams.find((t) => t.id === id);
+  const storedPairs = r?.matches.map((m) => [m.a, m.b]) || [];
+  const currentPairs =
+    matchDraft && r && matchDraft.roundId === r.id
+      ? matchDraft.pairs
+      : storedPairs;
+  const pairsDirty =
+    JSON.stringify(currentPairs) !== JSON.stringify(storedPairs);
+  const canEditPairs =
+    !!r && !r.published && !r.matches.some((m) => m.slot || m.offers.length);
+  const automaticPairs = (() => {
+    try {
+      return defaultDivisionPairs(teams);
+    } catch {
+      return [] as string[][];
+    }
+  })();
+  const chosenNewPairs = newPairIds ?? automaticPairs;
   const myTeams = teams.filter((t) => t.mine);
   const my =
     myTeams.find((t) => t.id === activeTeamId) ||
@@ -236,8 +264,9 @@ export default function Home() {
         if (i === 0 && a === "Команда 1" && b === "Команда 2") return;
         if (a || b) rows.push(a + ";" + b);
       });
-      parsePairs(rows.join("\n"));
-      setPairs(rows.join("\n"));
+      const parsed = parsePairs(rows.join("\n"));
+      validateDivisionPairs(teams, parsed);
+      setNewPairIds(parsed);
       setNotice("Excel прочитан. Проверьте пары перед созданием тура.");
     } catch (e) {
       setError("Ошибка Excel: " + (e as Error).message);
@@ -865,85 +894,119 @@ export default function Home() {
                     </section>
                     <section className="panel">
                       <h3>Матчи · {r.name}</h3>
-                      {!r.published &&
-                        !r.matches.some((m) => m.slot || m.offers.length) && (
-                          <form
-                            onSubmit={(e) => {
-                              e.preventDefault();
-                              try {
-                                action({
-                                  type: "pairs",
-                                  round: r.id,
-                                  pairs: parsePairs(
-                                    String(
-                                      new FormData(e.currentTarget).get(
-                                        "pairs",
-                                      ),
-                                    ),
-                                  ),
-                                });
-                              } catch (e) {
-                                setError((e as Error).message);
-                              }
-                            }}
-                          >
-                            <label className="wide">
-                              Пары текущего тура: Команда 1;Команда 2
-                              <textarea
-                                name="pairs"
-                                rows={5}
-                                defaultValue={r.matches
-                                  .map(
-                                    (m) =>
-                                      (team(m.a)?.division
-                                        ? team(m.a)?.division + " / "
-                                        : "") +
-                                      team(m.a)?.name +
-                                      ";" +
-                                      (team(m.b)?.division
-                                        ? team(m.b)?.division + " / "
-                                        : "") +
-                                      team(m.b)?.name,
-                                  )
-                                  .join("\n")}
-                              />
-                            </label>
-                            <button disabled={busy}>Сохранить пары</button>
-                          </form>
-                        )}
-                      {r.matches.map((m) => (
-                        <div className="admin-match" key={m.id}>
-                          <div>
-                            <Pair m={m} />
-                            {m.slot && count(m.slot).length > 1 && (
-                              <small className="danger">
-                                Конфликт — выберите другое время одной из пар
-                              </small>
-                            )}
-                          </div>
-                          <select
-                            aria-label={"Время " + team(m.a)?.name}
-                            value={m.slot || ""}
-                            disabled={busy}
-                            onChange={(e) =>
-                              action({
-                                type: "assign",
-                                round: r.id,
-                                match: m.id,
-                                slot: e.target.value,
+                      <p className="muted">
+                        Выбирайте соперников внутри дивизиона. При выборе уже
+                        занятой команды её место в другой паре поменяется
+                        автоматически. Изменения применятся после сохранения.
+                      </p>
+                      {!canEditPairs && (
+                        <p className="pair-lock-note">
+                          Пары зафиксированы: тур опубликован или уже началось
+                          согласование. Назначение времени остаётся доступно.
+                        </p>
+                      )}
+                      {canEditPairs && (
+                        <div className="pair-toolbar">
+                          <button
+                            type="button"
+                            className="ghost"
+                            disabled={busy || automaticPairs.length !== 16}
+                            onClick={() =>
+                              setMatchDraft({
+                                roundId: r.id,
+                                baseline: JSON.stringify(storedPairs),
+                                pairs: automaticPairs,
                               })
                             }
                           >
-                            <option value="">Не назначено</option>
-                            {r.slots.map((s) => (
-                              <option key={s.id} value={s.id}>
-                                {s.date} {s.time}{" "}
-                                {count(s.id).length ? "· занято" : ""}
-                              </option>
-                            ))}
-                          </select>
+                            Загрузить пары по дивизионам
+                          </button>
+                          {pairsDirty && (
+                            <span>Есть несохранённые изменения</span>
+                          )}
                         </div>
-                      ))}
+                      )}
+                      <MatchPairEditor
+                        teams={teams}
+                        value={currentPairs}
+                        disabled={busy || !canEditPairs}
+                        onChange={(next) =>
+                          setMatchDraft({
+                            roundId: r.id,
+                            baseline:
+                              matchDraft?.roundId === r.id
+                                ? matchDraft.baseline
+                                : JSON.stringify(storedPairs),
+                            pairs: next,
+                          })
+                        }
+                        extra={(index) => {
+                          const m = r.matches[index];
+                          return (
+                            <div className="admin-match">
+                              <label>
+                                Время игры
+                                <select
+                                  aria-label={
+                                    "Время " +
+                                    team(currentPairs[index][0])?.name
+                                  }
+                                  value={m.slot || ""}
+                                  disabled={busy || pairsDirty}
+                                  onChange={(e) =>
+                                    action({
+                                      type: "assign",
+                                      round: r.id,
+                                      match: m.id,
+                                      slot: e.target.value,
+                                    })
+                                  }
+                                >
+                                  <option value="">Не назначено</option>
+                                  {r.slots.map((slot) => (
+                                    <option key={slot.id} value={slot.id}>
+                                      {slot.date} {slot.time}{" "}
+                                      {count(slot.id).length ? "· занято" : ""}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              {m.slot && count(m.slot).length > 1 && (
+                                <small className="danger">
+                                  Конфликт — выберите другое время одной из пар
+                                </small>
+                              )}
+                            </div>
+                          );
+                        }}
+                      />
+                      {canEditPairs && (
+                        <div className="pair-save">
+                          <button
+                            disabled={busy || !pairsDirty}
+                            onClick={() =>
+                              action({
+                                type: "pairs",
+                                round: r.id,
+                                pairs: currentPairs,
+                                expectedPairs:
+                                  matchDraft?.baseline ||
+                                  JSON.stringify(storedPairs),
+                              })
+                            }
+                          >
+                            Сохранить пары
+                          </button>
+                          {pairsDirty && (
+                            <button
+                              className="ghost"
+                              onClick={() => setMatchDraft(null)}
+                            >
+                              Отменить изменения
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </section>
                     <details className="panel round-slots">
                       <summary>
@@ -1022,7 +1085,8 @@ export default function Home() {
                           e.preventDefault();
                           const f = new FormData(e.currentTarget);
                           try {
-                            const parsed = parsePairs(pairs);
+                            const parsed = chosenNewPairs;
+                            validateDivisionPairs(teams, parsed);
                             action({
                               type: "round",
                               name: f.get("name"),
@@ -1159,7 +1223,7 @@ export default function Home() {
                         </fieldset>
                         <label className="wide">
                           Импорт Excel (.xlsx): «Команда 1», «Команда 2»
-                          <a href="/pairs-template.xlsx" download>
+                          <a href="/api/pairs-template" download>
                             Скачать шаблон Excel ↓
                           </a>
                           <input
@@ -1171,16 +1235,39 @@ export default function Home() {
                             }
                           />
                         </label>
-                        <label className="wide">
-                          16 пар: Команда 1;Команда 2 — каждая на новой строке
-                          <textarea
-                            value={pairs}
-                            onChange={(e) => setPairs(e.target.value)}
-                            rows={8}
-                            required
-                          />
-                        </label>
-                        <button disabled={busy}>Создать тур</button>
+                        <div className="wide new-pair-section">
+                          <div className="pair-toolbar">
+                            <h3>Матчи нового тура</h3>
+                            <button
+                              type="button"
+                              className="ghost"
+                              disabled={busy || automaticPairs.length !== 16}
+                              onClick={() => setNewPairIds(automaticPairs)}
+                            >
+                              Заполнить по дивизионам
+                            </button>
+                          </div>
+                          <p className="muted">
+                            Стартовые пары собраны по алфавиту внутри
+                            дивизионов. Это заготовка — организатор может
+                            выбрать других соперников.
+                          </p>
+                          {chosenNewPairs.length ? (
+                            <MatchPairEditor
+                              teams={teams}
+                              value={chosenNewPairs}
+                              onChange={setNewPairIds}
+                              disabled={busy}
+                            />
+                          ) : (
+                            <p className="error">
+                              Проверьте состав и дивизионы 32 команд.
+                            </p>
+                          )}
+                        </div>
+                        <button disabled={busy || chosenNewPairs.length !== 16}>
+                          Создать тур
+                        </button>
                       </form>
                     </section>
                   </div>

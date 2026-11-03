@@ -1,3 +1,4 @@
+import { syncDivisionPairings } from "./pairing-migration";
 import { createHash } from "node:crypto";
 import { readFileSync, statSync } from "node:fs";
 import { validLogoPng } from "./team-logo-assets";
@@ -34,12 +35,22 @@ export function bundledCatalog(): CatalogTeam[] {
 }
 /** Apply each bundled revision once. User edits and old matches survive subsequent requests. */
 export function syncBundledCatalog(state: State) {
-  if (process.env.DEMO_MODE === "true") return;
+  if (process.env.DEMO_MODE === "true") {
+    state.teams.forEach((t) => {
+      const id = Number(t.id);
+      if (!t.division && Number.isInteger(id) && id >= 1 && id <= 32)
+        t.division = ["Pale", "Slow", "Rook", "Last"][Math.floor((id - 1) / 8)];
+    });
+    syncDivisionPairings(state);
+    return;
+  }
   const rows = bundledCatalog();
   const revision = createHash("sha256")
     .update(JSON.stringify(rows))
     .digest("hex");
-  if (state.catalogRevision === revision) return;
-  importTeamCatalog(state, rows);
-  state.catalogRevision = revision;
+  if (state.catalogRevision !== revision) {
+    importTeamCatalog(state, rows);
+    state.catalogRevision = revision;
+  }
+  syncDivisionPairings(state);
 }

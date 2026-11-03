@@ -28,14 +28,15 @@ test("catalog revision is idempotent and preserves rounds, captain IDs and later
   });
   const s = seed();
   s.teams.find((t) => t.name === "Normal Team")!.telegramId = "123";
-  const rounds = JSON.stringify(s.rounds);
+  s.rounds[0].published = true;
+  const rounds = JSON.stringify(s.rounds[0]);
   syncBundledCatalog(s);
   assert.equal(selectableTeams(s.teams).length, 32);
   assert.equal(
     s.teams.find((t) => t.name === "Normal Team")!.telegramId,
     "123",
   );
-  assert.equal(JSON.stringify(s.rounds), rounds);
+  assert.equal(JSON.stringify(s.rounds[0]), rounds);
   const length = s.teams.length;
   const team = s.teams.find(
     (t) => t.sourceTeamKey === catalog[0].sourceTeamKey,

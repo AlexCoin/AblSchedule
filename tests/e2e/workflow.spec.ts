@@ -31,6 +31,51 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
   await settings.locator("[name=deadline]").fill("2027-01-01T00:00");
   await settings.getByRole("button").click();
   await expect(page.getByRole("status")).toContainText("Изменения сохранены");
+  const firstTeam = page.getByRole("combobox", {
+    name: "Матч 1: команда",
+    exact: true,
+  });
+  const secondTeam = page.getByRole("combobox", {
+    name: "Матч 2: команда",
+    exact: true,
+  });
+  const firstId = await firstTeam.inputValue(),
+    secondId = await secondTeam.inputValue();
+  await expect(firstTeam.locator("option")).toHaveCount(8);
+  await firstTeam.selectOption(secondId);
+  await expect(secondTeam).toHaveValue(firstId);
+  await expect(page.locator(".admin-match select").first()).toBeDisabled();
+  await page
+    .getByRole("button", { name: "Сохранить пары", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Сохранить пары", exact: true }),
+  ).toBeDisabled();
+  const currentPairState = await (await page.request.get("/api/state")).json();
+  const invalidPairs = currentPairState.rounds[0].matches.map((m: any) => [
+    m.a,
+    m.b,
+  ]);
+  [invalidPairs[0][1], invalidPairs[4][1]] = [
+    invalidPairs[4][1],
+    invalidPairs[0][1],
+  ];
+  const invalidPairResponse = await page.request.post("/api/action", {
+    headers: { origin: "http://localhost:3100" },
+    data: { type: "pairs", round: "1", pairs: invalidPairs },
+  });
+  expect(invalidPairResponse.status()).toBe(400);
+  expect((await invalidPairResponse.json()).error).toContain(
+    "одного дивизиона",
+  );
+  await firstTeam.selectOption(firstId);
+  await page
+    .getByRole("button", { name: "Сохранить пары", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Сохранить пары", exact: true }),
+  ).toBeDisabled();
+
   await page.getByRole("button", { name: "Капитан C", exact: true }).click();
   await expect(page.locator(".my-match")).toContainText("АИТ");
   await page
@@ -219,6 +264,12 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
       exact: true,
     }),
   });
+  await expect(create.locator(".pair-division")).toHaveCount(4);
+  await expect(
+    create
+      .getByRole("combobox", { name: "Матч 1: команда", exact: true })
+      .locator("option"),
+  ).toHaveCount(8);
   await create.locator("[name=name]").fill("2 тур");
   await create.locator("[name=saturday]").fill("2026-11-14");
   await expect(create.locator("[name=opens]")).toHaveValue("2026-11-09T12:00");
@@ -238,9 +289,16 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
   await expect(create.locator("[name=start]")).toHaveValue("09:00");
 
   await page.screenshot({ path: "data/admin-new-mobile.png", fullPage: true });
+  const template = await page.request.get("/api/pairs-template");
+  expect(template.ok()).toBeTruthy();
   await create
     .locator("input[type=file]")
-    .setInputFiles("public/pairs-template.xlsx");
+    .setInputFiles({
+      name: "abl-pairs-template.xlsx",
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      buffer: await template.body(),
+    });
   await expect(page.getByRole("status")).toContainText("Excel прочитан");
   await create
     .getByRole("button", { name: "Создать тур", exact: true })

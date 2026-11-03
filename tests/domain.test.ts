@@ -5,7 +5,10 @@ import { seed, apply } from "../lib/domain";
 const now = Date.parse("2026-11-02T13:00:00+03:00");
 function setup() {
   const s = seed();
-  s.teams.forEach((t) => (t.telegramId = "tg" + t.id));
+  s.teams.forEach((t, i) => {
+    t.telegramId = "tg" + t.id;
+    t.division = ["Pale", "Slow", "Rook", "Last"][Math.floor(i / 8)];
+  });
   return s;
 }
 const a = { id: "tg1", admin: false },
