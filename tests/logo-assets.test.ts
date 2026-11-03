@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
@@ -46,4 +47,26 @@ test("unavailable or invalid images retain original link without creating fake f
       fetcher,
     }),
   );
+});
+
+test("a changed remote image cannot overwrite the uploaded archive checksum", async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), "abl-logo-check-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const entry = {
+    ...row,
+    imageSha256: createHash("sha256").update(png).digest("hex"),
+  };
+  await downloadLogoAssets([entry], {
+    directory,
+    fetcher: (async () => new Response(png)) as typeof fetch,
+  });
+  const changed = Buffer.concat([png, Buffer.from("changed")]);
+  const result = await downloadLogoAssets([entry], {
+    directory,
+    force: true,
+    fetcher: (async () => new Response(changed)) as typeof fetch,
+  });
+  assert.equal(result.downloaded, 0);
+  assert.equal(result.failures.length, 1);
+  assert.deepEqual(await readFile(join(directory, "test123.png")), png);
 });

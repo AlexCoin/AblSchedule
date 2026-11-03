@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { validLogoPng } from "../lib/team-logo-assets";
 import { teamMenu } from "../lib/team-menu";
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -72,4 +75,21 @@ test("bot exposes the imported 32 teams under four divisions in league order", (
       teamMenu(s, "123", String(i)).reply_markup.inline_keyboard.length,
       9,
     );
+});
+
+test("all 32 uploaded logos are bundled, decodable PNGs with matching content checksums", () => {
+  const resolved = bundledCatalog();
+  for (const row of catalog) {
+    const image = readFileSync("public" + row.localLogo);
+    assert(validLogoPng(image), row.name);
+    assert.equal(
+      createHash("sha256").update(image).digest("hex"),
+      row.imageSha256,
+      row.name,
+    );
+    assert.equal(
+      resolved.find((t) => t.sourceTeamKey === row.sourceTeamKey)!.logo,
+      row.localLogo,
+    );
+  }
 });

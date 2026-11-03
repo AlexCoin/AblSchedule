@@ -6,10 +6,10 @@ async function main() {
   });
   for (const name of result.failures)
     console.warn(
-      `Логотип ${name}: оставлена официальная ссылка; загрузка не удалась.`,
+      `Логотип ${name}: обновление не удалось; используется существующий файл или официальная ссылка.`,
     );
   console.log(
-    `Логотипы: загружено ${result.downloaded}, в кэше ${result.cached}, официальных ссылок ${result.failures.length}.`,
+    `Логотипы: загружено ${result.downloaded}, в кэше ${result.cached}, не обновлено ${result.failures.length}.`,
   );
 }
 main().catch((e) => {

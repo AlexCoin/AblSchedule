@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
 import { resolve, basename } from "node:path";
 type Asset = {
@@ -5,6 +6,7 @@ type Asset = {
   division: string;
   logo: string;
   localLogo: string;
+  imageSha256?: string;
 };
 const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 export function validLogoPng(data: Buffer) {
@@ -35,6 +37,10 @@ export async function downloadLogoAssets(
       throw Error("Некорректный или повторяющийся путь логотипа");
     paths.add(row.localLogo);
   }
+  const checked = (data: Buffer, row: Asset) =>
+    validLogoPng(data) &&
+    (!row.imageSha256 ||
+      createHash("sha256").update(data).digest("hex") === row.imageSha256);
   const pending = [...rows];
   await Promise.all(
     Array.from({ length: 4 }, async () => {
@@ -43,7 +49,7 @@ export async function downloadLogoAssets(
         if (!row) return;
         const path = resolve(directory, basename(row.localLogo));
         try {
-          if (!options.force && validLogoPng(await readFile(path))) {
+          if (!options.force && checked(await readFile(path), row)) {
             result.cached++;
             continue;
           }
@@ -80,7 +86,7 @@ export async function downloadLogoAssets(
             chunks.push(Buffer.from(chunk.value));
           }
           const data = Buffer.concat(chunks);
-          if (!validLogoPng(data)) throw Error();
+          if (!checked(data, row)) throw Error();
           await writeFile(path + ".tmp", data);
           await rename(path + ".tmp", path);
           result.downloaded++;

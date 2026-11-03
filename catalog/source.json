@@ -2,13 +2,303 @@
   "sourceUrl": "https://ablforpeople.com/divisions",
   "season": "Сезон 2026-2027",
   "seasonId": 231,
-  "source": "User-provided saved page Downloads.zip",
-  "archiveSha256": "bb7e669fef519fdc9fc4c3ead2a719c69cd57fc1d8e3df6a9a59fbbb5aa8722c",
+  "source": "User-provided Downloads.zip with four saved division pages and all team PNGs",
+  "archiveSha256": "10d306f87186928edb89ad90060168ba85feae250fbb2899cf47fbcc40903456",
   "divisions": {
     "Pale": 8,
     "Slow": 8,
     "Rook": 8,
     "Last": 8
   },
-  "note": "Team image files are not in the supplied archive. Official image URLs were read from its embedded page data."
+  "note": "All 32 original team logos are bundled locally. Source team identifiers and page data were cross-checked against the previous catalog.",
+  "images": [
+    {
+      "sourceTeamKey": "Pale:18997",
+      "page": "Таблица - PALE.html",
+      "imageEntry": "Таблица - PALE_files/1000027617.png",
+      "imageSha256": "8def911bab0aaa01d4eff2f75bcd54f16c94272204b7c7dace76e2e28a33218d",
+      "bytes": 94674,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Pale:18995",
+      "page": "Таблица - PALE.html",
+      "imageEntry": "Таблица - PALE_files/SouzBasket_DD4ZX.png",
+      "imageSha256": "be70d6abac67d48f2d945e5317047481a24b129fe9b4e5cad84125261c8a066f",
+      "bytes": 126697,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Pale:3264",
+      "page": "Таблица - PALE.html",
+      "imageEntry": "Таблица - PALE_files/Aguary_n8ACk.png",
+      "imageSha256": "68124680adeb1cc6a24ee08d3a7d16f4b2cd66bb39d974405990cb966f703aab",
+      "bytes": 129457,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Pale:14337",
+      "page": "Таблица - PALE.html",
+      "imageEntry": "Таблица - PALE_files/2025-01-3119.09.33_kZX9X_VSVbl.png",
+      "imageSha256": "222b778c75dad0044e59278c4559cc9a15086242a65aba56348c05921796e9a6",
+      "bytes": 43126,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Pale:19512",
+      "page": "Таблица - PALE.html",
+      "imageEntry": "Таблица - PALE_files/VoshodOmnia_gMtjx.png",
+      "imageSha256": "774ed208c93a1fa5c528a10c9bdec3b76ef238f78bee8b005c0c73ac1a5ca6d8",
+      "bytes": 33335,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Pale:18563",
+      "page": "Таблица - PALE.html",
+      "imageEntry": "Таблица - PALE_files/Aviator_ImTLW.png",
+      "imageSha256": "1995bdd9d4a2f03ff2e67e62890161b8628a5ba0a4cf7fde13ae910063c88947",
+      "bytes": 177945,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Pale:19090",
+      "page": "Таблица - PALE.html",
+      "imageEntry": "Таблица - PALE_files/IMG_5227_RsoGg.png",
+      "imageSha256": "cb2a138889a7608b4041bc5e8e1f40b29407601b21e31d093ecf8156b1fec2c5",
+      "bytes": 124366,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Pale:5479",
+      "page": "Таблица - PALE.html",
+      "imageEntry": "Таблица - PALE_files/1000023658.png",
+      "imageSha256": "e826cedc2564e1889a336f79e3efde81ade239c9dee8a45ed6ae4515d26b7dd6",
+      "bytes": 160593,
+      "width": 600,
+      "height": 599
+    },
+    {
+      "sourceTeamKey": "Slow:11609",
+      "page": "Таблица - SLOW.html",
+      "imageEntry": "Таблица - SLOW_files/NormalTEam_2VuvZ.png",
+      "imageSha256": "7825d64adec668f4ec1b243494c1b14aed3f37cc5ffe790c01401d6a8793a26a",
+      "bytes": 103902,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Slow:17311",
+      "page": "Таблица - SLOW.html",
+      "imageEntry": "Таблица - SLOW_files/Vympel_vTh5w_92eaU.png",
+      "imageSha256": "24e20dcde45a41e6735c15dfb7aa5b7a0d3a7c82aac57b5c0626f6777b1e0907",
+      "bytes": 114135,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Slow:10193",
+      "page": "Таблица - SLOW.html",
+      "imageEntry": "Таблица - SLOW_files/IMG_0802.png",
+      "imageSha256": "e7f5171f7be9e21b854dc38e14b515beb30a06e6705b672478cf4afa4951ef8e",
+      "bytes": 264290,
+      "width": 444,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Slow:19443",
+      "page": "Таблица - SLOW.html",
+      "imageEntry": "Таблица - SLOW_files/logocill4.png",
+      "imageSha256": "5f3b835913d51905f7062a81d1a912b0f5d2278f4b60fca410b3bc759ff0639a",
+      "bytes": 42204,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Slow:14351",
+      "page": "Таблица - SLOW.html",
+      "imageEntry": "Таблица - SLOW_files/logomaksbasketcb-052025-01-0906_53_22_hFIOo.png",
+      "imageSha256": "4a1896519b7b6e4031ba8bd1686ab08b4c96eeb87c6d2993485db06c13aa5ef4",
+      "bytes": 128102,
+      "width": 600,
+      "height": 580
+    },
+    {
+      "sourceTeamKey": "Slow:18925",
+      "page": "Таблица - SLOW.html",
+      "imageEntry": "Таблица - SLOW_files/IMG_1472_nWcbI.png",
+      "imageSha256": "540cdfc6456b75f9538b71a4bdb252d214595787dc5160503e6e9d2702cffb73",
+      "bytes": 99467,
+      "width": 600,
+      "height": 457
+    },
+    {
+      "sourceTeamKey": "Slow:19599",
+      "page": "Таблица - SLOW.html",
+      "imageEntry": "Таблица - SLOW_files/DIT_Logovnesnij1-01.png",
+      "imageSha256": "5c2d1e66edcc27c021ae8ae8a1e1f20eb1d1b86198ea70aad1c8485c76840a36",
+      "bytes": 4871,
+      "width": 315,
+      "height": 552
+    },
+    {
+      "sourceTeamKey": "Slow:11544",
+      "page": "Таблица - SLOW.html",
+      "imageEntry": "Таблица - SLOW_files/IMG_20230721_132411_582_g5wgD.PNG",
+      "imageSha256": "4db89cde913b73d0aa7d540ce51f86889d31565acf266ca40ad55d5c3b3f5e3e",
+      "bytes": 122698,
+      "width": 600,
+      "height": 500
+    },
+    {
+      "sourceTeamKey": "Rook:8370",
+      "page": "Таблица - ROOK.html",
+      "imageEntry": "Таблица - ROOK_files/LogoWhite_NUrEH.png",
+      "imageSha256": "5c260ba76e650643292e6881f0f769c87cd00149a0d8b775c94b297b65de8d87",
+      "bytes": 318529,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Rook:10194",
+      "page": "Таблица - ROOK.html",
+      "imageEntry": "Таблица - ROOK_files/IMG_0802_u3Nfl.png",
+      "imageSha256": "e7f5171f7be9e21b854dc38e14b515beb30a06e6705b672478cf4afa4951ef8e",
+      "bytes": 264290,
+      "width": 444,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Rook:8449",
+      "page": "Таблица - ROOK.html",
+      "imageEntry": "Таблица - ROOK_files/IMG_8900.PNG",
+      "imageSha256": "a60a2dde76f3e78f16cc254853fb57058fe99956bca7035d10581772439184be",
+      "bytes": 90544,
+      "width": 598,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Rook:19616",
+      "page": "Таблица - ROOK.html",
+      "imageEntry": "Таблица - ROOK_files/IMG_1764_VqM7g_KoV3m.png",
+      "imageSha256": "2a1f6d11779ab53a17e350d7f765cc35a39c45bbf6290209979eb38c701497fc",
+      "bytes": 133116,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Rook:19444",
+      "page": "Таблица - ROOK.html",
+      "imageEntry": "Таблица - ROOK_files/IMG_0550.PNG",
+      "imageSha256": "b5ec4cf9beaa5b6c0bae9151de38a46d363ad7e8cc85dbb7e54a727cad4bca26",
+      "bytes": 25036,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Rook:14280",
+      "page": "Таблица - ROOK.html",
+      "imageEntry": "Таблица - ROOK_files/logobelaaten_.png",
+      "imageSha256": "252bf621dfaaf4edc2518e0e8b786f28f4ca398b8db00b01cc81080e15b86621",
+      "bytes": 42617,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Rook:1649",
+      "page": "Таблица - ROOK.html",
+      "imageEntry": "Таблица - ROOK_files/IMG_20251029_164514_855.png",
+      "imageSha256": "c682958a9c8e4ef6fbc75ea70bde139ac655b2cf9c08c9e9f8fbd4ea3c7bc3bd",
+      "bytes": 195391,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Rook:224",
+      "page": "Таблица - ROOK.html",
+      "imageEntry": "Таблица - ROOK_files/melbourne2.png",
+      "imageSha256": "2ac2f7407293afb0420086ca104d5a0c6f8d096781d377885e839762dfc2f549",
+      "bytes": 439684,
+      "width": 1200,
+      "height": 1233
+    },
+    {
+      "sourceTeamKey": "Last:19513",
+      "page": "Таблица - LAST.html",
+      "imageEntry": "Таблица - LAST_files/IMG_3627.png",
+      "imageSha256": "528a755ddb41a2680a6d700340db905ef5573b132f8e6cc9df92bb60306d9e58",
+      "bytes": 80366,
+      "width": 481,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Last:19515",
+      "page": "Таблица - LAST.html",
+      "imageEntry": "Таблица - LAST_files/3853.png",
+      "imageSha256": "3e97ea17a350cd982687352dbce6ae37447dfbdbac2c26a9c0ee172cf95e4814",
+      "bytes": 199942,
+      "width": 409,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Last:18991",
+      "page": "Таблица - LAST.html",
+      "imageEntry": "Таблица - LAST_files/gg_hRYe7_RF1aR.png",
+      "imageSha256": "00978cb2748cd17678cc2c415e10277381932e50fc3ed0794928da5106701011",
+      "bytes": 88952,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Last:4095",
+      "page": "Таблица - LAST.html",
+      "imageEntry": "Таблица - LAST_files/IMG_6649.png",
+      "imageSha256": "697b5d5a7512acd751805820f6b109ce34897c36981dc763206c6aca6bb80dbb",
+      "bytes": 67881,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Last:8235",
+      "page": "Таблица - LAST.html",
+      "imageEntry": "Таблица - LAST_files/Oo_-SBkJzfaym0IFPq2KO-transformed-transformed.png",
+      "imageSha256": "2e32eecfcd75bb15732c7ac166ea319d3e59828206600fca67f03f9c7303cfc8",
+      "bytes": 430897,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Last:19436",
+      "page": "Таблица - LAST.html",
+      "imageEntry": "Таблица - LAST_files/IMG_1808_7ea7w_mUaxe_VoE9i.png",
+      "imageSha256": "fc2eca28479d7c3bdebf1894966f612829f6ca11c69248a3fa1a959af5214a29",
+      "bytes": 16475,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Last:19712",
+      "page": "Таблица - LAST.html",
+      "imageEntry": "Таблица - LAST_files/IMG_2085_piQfj_4FCkW.png",
+      "imageSha256": "24aa6eac1378033b9acb27554c555435f91206bb988ab0168a155fa22359fb74",
+      "bytes": 71229,
+      "width": 600,
+      "height": 600
+    },
+    {
+      "sourceTeamKey": "Last:19517",
+      "page": "Таблица - LAST.html",
+      "imageEntry": "Таблица - LAST_files/1000294263.png",
+      "imageSha256": "4eeed249fc9044a9df944e993a7dbb5ffb59686b37de679acc0a1f6b7403e35c",
+      "bytes": 575186,
+      "width": 600,
+      "height": 500
+    }
+  ]
 }
