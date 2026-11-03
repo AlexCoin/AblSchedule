@@ -1374,3 +1374,17 @@ body {
     font-size: 8px;
   }
 }
+/* Telegram mobile webview keeps controls clear of device cutouts. */
+body {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+header {
+  padding-top: max(20px, env(safe-area-inset-top, 0px));
+}
+.loading {
+  min-height: 60vh;
+}
+.loading p {
+  max-width: 560px;
+  line-height: 1.7;
+}

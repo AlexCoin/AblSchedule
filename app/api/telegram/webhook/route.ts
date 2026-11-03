@@ -1,34 +1,64 @@
 import { timingSafeEqual } from "node:crypto";
 import { loginQuery } from "../../../../lib/db";
+import { telegramRequest, publicAppUrl } from "../../../../lib/telegram-bot";
 export async function POST(req: Request) {
-  const expected = process.env.TELEGRAM_WEBHOOK_SECRET;
-  const value = req.headers.get("x-telegram-bot-api-secret-token") || "";
+  const expected = Buffer.from(process.env.TELEGRAM_WEBHOOK_SECRET || "");
+  const received = Buffer.from(
+    req.headers.get("x-telegram-bot-api-secret-token") || "",
+  );
   if (
-    !expected ||
-    value.length !== expected.length ||
-    !timingSafeEqual(Buffer.from(value), Buffer.from(expected))
+    !expected.length ||
+    received.length !== expected.length ||
+    !timingSafeEqual(received, expected)
   )
     return new Response("Forbidden", { status: 403 });
-  const body = await req.json();
+  if (!process.env.TELEGRAM_BOT_TOKEN)
+    return new Response("Bot not configured", { status: 503 });
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return new Response("Invalid update", { status: 400 });
+  }
   const m = body.message;
-  const match = /^\/start(?:@\w+)? ([a-f0-9]{48})$/.exec(m?.text || "");
-  if (match && m.chat?.type === "private" && m.from?.id) {
+  if (
+    m?.chat?.type !== "private" ||
+    !Number.isSafeInteger(m.from?.id) ||
+    m.from.id <= 0 ||
+    m.from.is_bot
+  )
+    return Response.json({ ok: true });
+  const command = /^\/(start|schedule|help)(?:@\w+)?(?:\s+.*)?$/.exec(
+    m.text || "",
+  );
+  if (!command) return Response.json({ ok: true });
+  const login = /^\/start(?:@\w+)? ([a-f0-9]{48})$/.exec(m.text || "");
+  if (login)
     await loginQuery(
       "UPDATE login SET user_id=? WHERE token=? AND expires>? AND user_id IS NULL",
-      [String(m.from.id), match[1], Date.now()],
+      [String(m.from.id), login[1], Date.now()],
     );
-    await fetch(
-      `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: m.chat.id,
-          text: `Ваш Telegram ID: ${m.from.id}. Если вы открыли вход из приложения, вернитесь в браузер. Организатор назначает команду по этому ID.`,
-        }),
-        signal: AbortSignal.timeout(5000),
+  let url: string;
+  try {
+    url = publicAppUrl();
+  } catch {
+    return new Response("APP_URL not configured", { status: 503 });
+  }
+  const text = login
+    ? `Если вы открыли вход из браузера, вернитесь в него для завершения. Ваш Telegram ID: ${m.from.id}. Организатор привязывает команду по этому ID.`
+    : `ABL • Расписание турнира\nОткройте приложение кнопкой ниже: вход через ваш аккаунт Telegram выполнится автоматически.\nВаш Telegram ID: ${m.from.id}. Передайте его организатору для привязки к команде.`;
+  try {
+    await telegramRequest("sendMessage", {
+      chat_id: m.chat.id,
+      text,
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "🏀 Открыть расписание", web_app: { url } }],
+        ],
       },
-    );
+    });
+  } catch {
+    return new Response("Telegram temporarily unavailable", { status: 503 });
   }
   return Response.json({ ok: true });
 }

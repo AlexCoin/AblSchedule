@@ -36,11 +36,12 @@ export async function actor(): Promise<Actor | null> {
     return null;
   }
 }
-export async function setSession(id: string) {
+export async function setSession(id: string, miniApp = false) {
   (await cookies()).set("abl_session", sign(id), {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: miniApp ? "none" : "lax",
+    secure: miniApp || process.env.NODE_ENV === "production",
+    partitioned: miniApp,
     path: "/",
     maxAge: 604800,
   });

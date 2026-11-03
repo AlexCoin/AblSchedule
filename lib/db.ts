@@ -11,10 +11,17 @@ async function connection() {
     pool ??= new Pool({
       connectionString: process.env.DATABASE_URL,
       allowExitOnIdle: true,
+      max: 5,
+      connectionTimeoutMillis: 10000,
     });
-    ready ??= pool.query(
-      "CREATE TABLE IF NOT EXISTS app (id INTEGER PRIMARY KEY,value TEXT NOT NULL); CREATE TABLE IF NOT EXISTS login (token TEXT PRIMARY KEY,user_id TEXT,expires BIGINT NOT NULL)",
-    );
+    ready ??= pool
+      .query(
+        "CREATE TABLE IF NOT EXISTS app (id INTEGER PRIMARY KEY,value TEXT NOT NULL); CREATE TABLE IF NOT EXISTS login (token TEXT PRIMARY KEY,user_id TEXT,expires BIGINT NOT NULL)",
+      )
+      .catch((error) => {
+        ready = undefined;
+        throw error;
+      });
     await ready;
     return pool;
   }

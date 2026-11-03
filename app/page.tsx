@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { telegramWebApp } from "../lib/telegram-client";
 import type { PreliminaryBooking } from "../lib/preliminary";
 import type { Round, Match, Team } from "../lib/domain";
 import { defaultWindow } from "../lib/domain";
@@ -33,6 +34,9 @@ export default function Home() {
     [busy, setBusy] = useState(false),
     [login, setLogin] = useState(""),
     [pairs, setPairs] = useState("");
+  const [telegramMode, setTelegramMode] = useState(false);
+  const [telegramLoading, setTelegramLoading] = useState(false);
+  const refreshEnabled = useRef(false);
   const [adminView, setAdminView] = useState("current");
   const [newSaturday, setNewSaturday] = useState("");
   const [newStart, setNewStart] = useState("10:00");
@@ -51,9 +55,37 @@ export default function Home() {
       setError(String(e));
     }
   }
+  async function initializeTelegram() {
+    setError("");
+    setTelegramLoading(true);
+    refreshEnabled.current = false;
+    try {
+      const app = await telegramWebApp();
+      if (app) {
+        setTelegramMode(true);
+        const response = await fetch("/api/auth/telegram-mini", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ initData: app.initData }),
+        });
+        const json = await response.json();
+        if (!response.ok)
+          throw Error(json.error || "Не удалось войти через Telegram");
+      }
+      await refresh();
+      refreshEnabled.current = true;
+    } catch (e) {
+      setData(null);
+      setError((e as Error).message);
+    } finally {
+      setTelegramLoading(false);
+    }
+  }
   useEffect(() => {
-    refresh();
-    const t = setInterval(refresh, 15000);
+    initializeTelegram();
+    const t = setInterval(() => {
+      if (refreshEnabled.current) refresh();
+    }, 15000);
     return () => clearInterval(t);
   }, []);
   useEffect(() => {
@@ -193,8 +225,15 @@ export default function Home() {
         <h1>
           ABL<span> / РАСПИСАНИЕ</span>
         </h1>
-        <p>{error || "Загружаем площадку…"}</p>
-        <button onClick={refresh}>Повторить</button>
+        <p>
+          {error ||
+            (telegramLoading
+              ? "Подключаем приложение…"
+              : "Загружаем площадку…")}
+        </p>
+        <button disabled={telegramLoading} onClick={initializeTelegram}>
+          Повторить
+        </button>
       </main>
     );
   return (
@@ -217,7 +256,11 @@ export default function Home() {
               <button
                 className="ghost"
                 onClick={async () => {
-                  await fetch("/api/auth/logout", { method: "POST" });
+                  await fetch("/api/auth/logout", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ miniApp: telegramMode }),
+                  });
                   setTab("schedule");
                   setNotice("");
                   setError("");
@@ -228,7 +271,12 @@ export default function Home() {
               </button>
             </>
           ) : (
-            <button onClick={() => auth()}>Войти через Telegram</button>
+            <button
+              disabled={telegramLoading}
+              onClick={() => (telegramMode ? initializeTelegram() : auth())}
+            >
+              {telegramMode ? "Войти в Telegram" : "Войти через Telegram"}
+            </button>
           )}
         </div>
       </header>

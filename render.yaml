@@ -1,0 +1,36 @@
+# Temporary free trial deployment.
+# Free services may sleep; review PostgreSQL expiration and other limits in Render.
+databases:
+  - name: abl-schedule-db
+    plan: free
+    databaseName: abl
+    user: abl
+    region: frankfurt
+services:
+  - type: web
+    name: abl-schedule
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start:hosted
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: abl-schedule-db
+          property: connectionString
+      - key: DEMO_MODE
+        value: "false"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: TELEGRAM_WEBHOOK_SECRET
+        generateValue: true
+      - key: TELEGRAM_BOT_USERNAME
+        value: abl_schedule_bot
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: ADMIN_TELEGRAM_IDS
+        sync: false

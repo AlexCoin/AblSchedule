@@ -1,3 +1,4 @@
+import { configuredAppUrl } from "../../../lib/app-url";
 import { sameOrigin } from "../../../lib/http";
 import { actor } from "../../../lib/auth";
 import { transaction } from "../../../lib/db";
@@ -51,43 +52,44 @@ export async function POST(req: Request) {
         text: `ABL • ${r?.name || ""}\n${labels[input.type] || "Расписание обновлено"}\n${pair}\n${input.slot ? input.slot.replace("T", " ") + " МСК" : ""}${conflict ? "\nКонфликт: несколько пар согласовали один слот. Решение за организатором." : ""}`,
       };
     });
-    const results = process.env.TELEGRAM_BOT_TOKEN
-      ? await Promise.all(
-          notification.recipients.map(async (id) => {
-            try {
-              const response = await fetch(
-                `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    chat_id: id,
-                    text: notification.text,
-                    ...(process.env.APP_URL
-                      ? {
-                          reply_markup: {
-                            inline_keyboard: [
-                              [
-                                {
-                                  text: "Открыть расписание",
-                                  url: process.env.APP_URL,
-                                },
+    const results =
+      process.env.TELEGRAM_BOT_TOKEN && process.env.DEMO_MODE !== "true"
+        ? await Promise.all(
+            notification.recipients.map(async (id) => {
+              try {
+                const response = await fetch(
+                  `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: id,
+                      text: notification.text,
+                      ...(configuredAppUrl()
+                        ? {
+                            reply_markup: {
+                              inline_keyboard: [
+                                [
+                                  {
+                                    text: "Открыть расписание",
+                                    web_app: { url: configuredAppUrl() },
+                                  },
+                                ],
                               ],
-                            ],
-                          },
-                        }
-                      : {}),
-                  }),
-                  signal: AbortSignal.timeout(5000),
-                },
-              );
-              return response.ok;
-            } catch {
-              return false;
-            }
-          }),
-        )
-      : [];
+                            },
+                          }
+                        : {}),
+                    }),
+                    signal: AbortSignal.timeout(5000),
+                  },
+                );
+                return response.ok;
+              } catch {
+                return false;
+              }
+            }),
+          )
+        : [];
     return Response.json({
       ok: true,
       warning: results.some((ok) => !ok)
