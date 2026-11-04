@@ -6,7 +6,7 @@
     "dev": "next dev --hostname 0.0.0.0",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
-    "test": "node --import tsx tests/domain.test.ts && node --import tsx tests/telegram.test.ts && node --import tsx tests/telegram-bot.test.ts && node --import tsx tests/team-selection.test.ts && node --import tsx tests/bundled-catalog.test.ts && node --import tsx tests/logo-assets.test.ts && node --import tsx tests/division-pairs.test.ts",
+    "test": "node --import tsx tests/domain.test.ts && node --import tsx tests/telegram.test.ts && node --import tsx tests/telegram-bot.test.ts && node --import tsx tests/team-selection.test.ts && node --import tsx tests/bundled-catalog.test.ts && node --import tsx tests/logo-assets.test.ts && node --import tsx tests/division-pairs.test.ts && node --import tsx tests/slot-heading.test.ts",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
     "format": "prettier --write app lib tests *.ts *.json",

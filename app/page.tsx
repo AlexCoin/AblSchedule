@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
+import { slotHeading } from "../lib/slot-heading";
 import MatchPairEditor from "../components/MatchPairEditor";
 import {
   defaultDivisionPairs,
@@ -617,10 +618,11 @@ export default function Home() {
                           (o) => o.team === my.id && o.slot === s.id,
                         );
                       const agreed = mine?.slot === s.id;
-                      const cardDivision =
-                        matches.length === 1 && pending.length === 0
-                          ? team(matches[0].a)?.division || ""
-                          : "";
+                      const cardDivision = slotHeading(
+                        matches,
+                        teams,
+                        pending.length,
+                      );
                       return (
                         <article
                           className={
@@ -639,7 +641,12 @@ export default function Home() {
                           key={s.id}
                           data-slot={s.id}
                         >
-                          <div className="card-top">
+                          <div
+                            className={
+                              "card-top " +
+                              (!matches.length ? "card-heading-status" : "")
+                            }
+                          >
                             <span>{cardDivision}</span>
                           </div>
                           <div className="card-date">

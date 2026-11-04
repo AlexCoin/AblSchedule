@@ -253,3 +253,16 @@ test("captain withdraws only own offer for selected slot; opponent and other pai
   assert.equal(r.matches[0].slot, null);
   assert.equal(r.matches[1].offers.length, 1);
 });
+test("agreement order follows confirmation rather than match list and resets on reassignment", () => {
+  const s = setup(),
+    r = s.rounds[0],
+    slot = r.slots[0].id;
+  apply(s, admin, { type: "assign", round: "1", match: "2", slot }, now);
+  apply(s, admin, { type: "assign", round: "1", match: "1", slot }, now);
+  assert(r.matches[1].agreementOrder! < r.matches[0].agreementOrder!);
+  const order = r.matches[1].agreementOrder;
+  apply(s, admin, { type: "assign", round: "1", match: "2", slot }, now);
+  assert.equal(r.matches[1].agreementOrder, order);
+  apply(s, admin, { type: "assign", round: "1", match: "2", slot: "" }, now);
+  assert.equal(r.matches[1].agreementOrder, undefined);
+});

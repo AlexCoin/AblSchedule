@@ -1648,3 +1648,13 @@ summary.pair-division-heading h4 {
   padding: 7px 9px;
   text-align: left;
 }
+.cards .card-heading-status > span {
+  font-size: 13px;
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+@media (max-width: 760px) {
+  .cards .card-heading-status > span {
+    font-size: 10px;
+  }
+}

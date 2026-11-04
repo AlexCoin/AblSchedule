@@ -85,10 +85,12 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
   await page.getByRole("button", { name: "Капитан A", exact: true }).click();
   const tentative = page.locator('[data-slot="2026-11-07T10:00"]');
   await expect(tentative).toHaveClass(/tentative-card/);
-  await expect(tentative.locator(".card-top")).toHaveText("");
+  await expect(tentative.locator(".card-top")).toHaveText(
+    "Ожидает подтверждения",
+  );
   await expect(
     page.locator('[data-slot="2026-11-07T11:10"] .card-top'),
-  ).toHaveText("");
+  ).toHaveText("Доступен");
   await expect(tentative.locator(".division-tag")).toHaveCount(0);
   await page.getByRole("button", { name: "Капитан C", exact: true }).click();
   await tentative
@@ -179,7 +181,7 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
   const multi = await (await page.request.get("/api/state")).json();
   await expect(
     page.locator('[data-slot="2026-11-07T10:00"] .card-top'),
-  ).toHaveText("");
+  ).toHaveText("Pale");
 
   expect(
     multi.rounds[0].matches.find((m: any) => m.id === "3").offers,
@@ -233,7 +235,7 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
   await expect(page.getByText("Согласовано:", { exact: false })).toBeVisible();
   await expect(
     page.locator('[data-slot="2026-11-07T10:00"] .card-top'),
-  ).toHaveText("");
+  ).toHaveText("Pale");
   await page.getByRole("button", { name: "Организатор", exact: true }).click();
   await page.getByRole("button", { name: "Управление турниром" }).click();
   let selectors = page.locator(".admin-match select");

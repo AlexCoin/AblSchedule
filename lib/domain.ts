@@ -14,6 +14,7 @@ export type Match = {
   b: string;
   offers: { team: string; slot: string; by?: string }[];
   slot: string | null;
+  agreementOrder?: number;
 };
 export type Round = {
   id: string;
@@ -329,6 +330,10 @@ export function apply(s: State, actor: Actor, input: any, now = Date.now()) {
       throw Error("Этот слот уже занят");
     if (r.published && !input.slot)
       throw Error("Опубликованный матч должен иметь время");
+    if (input.slot && m.slot !== input.slot)
+      m.agreementOrder =
+        Math.max(0, ...r.matches.map((x) => x.agreementOrder || 0)) + 1;
+    if (!input.slot) delete m.agreementOrder;
     m.slot = input.slot || null;
     m.offers = [];
     return;
@@ -349,6 +354,7 @@ export function apply(s: State, actor: Actor, input: any, now = Date.now()) {
     throw Error("Окно согласования закрыто");
   if (input.type === "reopen") {
     m.slot = null;
+    delete m.agreementOrder;
     m.offers = [];
     return;
   }
@@ -381,6 +387,8 @@ export function apply(s: State, actor: Actor, input: any, now = Date.now()) {
       throw Error(
         "Своё предложение нельзя подтверждать за соперника. Обратитесь к организатору.",
       );
+    m.agreementOrder =
+      Math.max(0, ...r.matches.map((x) => x.agreementOrder || 0)) + 1;
     m.slot = input.slot;
     m.offers = [];
     return;
