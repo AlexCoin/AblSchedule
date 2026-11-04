@@ -617,22 +617,10 @@ export default function Home() {
                           (o) => o.team === my.id && o.slot === s.id,
                         );
                       const agreed = mine?.slot === s.id;
-                      const divisionNames = [
-                        ...new Set(
-                          [
-                            ...matches,
-                            ...pending.map((p) =>
-                              r.matches.find((m) => m.id === p.matchId)!,
-                            ),
-                          ]
-                            .map((m) => team(m.a)?.division)
-                            .filter(Boolean),
-                        ),
-                      ];
                       const cardDivision =
-                        divisionNames.join(" / ") ||
-                        my?.division ||
-                        "Свободный слот";
+                        matches.length === 1 && pending.length === 0
+                          ? team(matches[0].a)?.division || ""
+                          : "";
                       return (
                         <article
                           className={
