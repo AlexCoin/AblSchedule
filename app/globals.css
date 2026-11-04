@@ -112,15 +112,16 @@ main {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 320px;
-  padding: 45px 0;
+  min-height: 0;
+  padding: 18px 0;
+  gap: 20px;
   overflow: hidden;
 }
 .eyebrow {
   font-size: 11px;
   letter-spacing: 3px;
   font-weight: 800;
-  margin-bottom: 20px;
+  margin-bottom: 7px;
   color: var(--muted);
 }
 h1 {
@@ -133,9 +134,20 @@ h1 {
 h1 span {
   color: var(--red);
 }
+.hero h1 {
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -0.8px;
+}
+.hero .eyebrow {
+  font-size: 9px;
+  letter-spacing: 2px;
+}
 .hero p {
   color: var(--muted);
-  margin: 22px 0 0;
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
 }
 .basket {
   font-size: 210px;
@@ -647,17 +659,17 @@ footer > span {
     padding: 0 16px;
   }
   .hero {
-    min-height: 260px;
-    padding: 35px 0;
+    min-height: 0;
+    padding: 14px 0;
   }
   .hero h1 {
-    font-size: 34px;
-    letter-spacing: -1.5px;
+    font-size: 20px;
+    letter-spacing: -0.5px;
   }
   .hero p {
-    font-size: 12px;
-    line-height: 1.7;
-    max-width: 280px;
+    font-size: 10px;
+    line-height: 1.5;
+    max-width: 340px;
   }
   .basket {
     display: none;
@@ -797,8 +809,8 @@ footer > span {
   }
 }
 .basket svg {
-  width: 190px;
-  height: 190px;
+  width: 64px;
+  height: 64px;
   fill: none;
   stroke: currentColor;
   stroke-width: 3;
@@ -807,7 +819,8 @@ footer > span {
   stroke-width: 2;
 }
 .basket {
-  padding: 0 45px;
+  padding: 0 12px;
+  flex-shrink: 0;
   font-size: 0;
 }
 .crest:has(img) {
