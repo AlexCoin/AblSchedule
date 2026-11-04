@@ -1622,3 +1622,29 @@ details[open] > summary.pair-division-heading::before {
 summary.pair-division-heading h4 {
   margin-right: auto;
 }
+.cards .card-top > span {
+  text-transform: uppercase;
+}
+.cards .card-actions .withdraw-offer {
+  background: transparent;
+  color: #8a4e21;
+  border: 1px solid #d4b28b;
+}
+.admin-pending {
+  display: grid;
+  gap: 5px;
+  padding-top: 8px;
+  color: #896022;
+}
+.admin-pending strong {
+  font-size: 10px;
+}
+.admin-pending small {
+  font-size: 9px;
+  line-height: 1.5;
+}
+.admin-pending button {
+  font-size: 9px;
+  padding: 7px 9px;
+  text-align: left;
+}

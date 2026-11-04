@@ -85,6 +85,29 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
   await page.getByRole("button", { name: "Капитан A", exact: true }).click();
   const tentative = page.locator('[data-slot="2026-11-07T10:00"]');
   await expect(tentative).toHaveClass(/tentative-card/);
+  await expect(tentative.locator(".card-top")).toHaveText("Pale");
+  await expect(tentative.locator(".division-tag")).toHaveCount(0);
+  await page.getByRole("button", { name: "Капитан C", exact: true }).click();
+  await tentative
+    .getByRole("button", { name: "Убрать выбор слота", exact: true })
+    .click();
+  await expect(tentative.locator(".preliminary-bookings")).toHaveCount(0);
+  await tentative
+    .getByRole("button", { name: "Выбрать этот слот", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Организатор", exact: true }).click();
+  await page.getByRole("button", { name: "Управление турниром" }).click();
+  const pendingSlot = page.locator(".admin-match select").nth(1);
+  await expect(pendingSlot).toHaveValue("__pending__");
+  await expect(page.locator(".admin-pending")).toContainText("АИТ");
+  await pendingSlot.selectOption("");
+  await expect(page.locator(".admin-pending")).toHaveCount(0);
+  await page.getByRole("button", { name: "Капитан C", exact: true }).click();
+  await tentative
+    .getByRole("button", { name: "Выбрать этот слот", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Капитан A", exact: true }).click();
+
   await expect(tentative).toContainText("Предварительная заявка");
   await expect(tentative).toContainText("АИТ");
   await expect(
@@ -291,14 +314,12 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
   await page.screenshot({ path: "data/admin-new-mobile.png", fullPage: true });
   const template = await page.request.get("/api/pairs-template");
   expect(template.ok()).toBeTruthy();
-  await create
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "abl-pairs-template.xlsx",
-      mimeType:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      buffer: await template.body(),
-    });
+  await create.locator("input[type=file]").setInputFiles({
+    name: "abl-pairs-template.xlsx",
+    mimeType:
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    buffer: await template.body(),
+  });
   await expect(page.getByRole("status")).toContainText("Excel прочитан");
   await create
     .getByRole("button", { name: "Создать тур", exact: true })

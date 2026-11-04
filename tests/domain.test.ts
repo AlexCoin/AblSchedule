@@ -218,3 +218,38 @@ test("preliminary interest is visible per pair and slot until agreement", () => 
     { matchId: "2", slot, proposedBy: ["3"] },
   ]);
 });
+test("captain withdraws only own offer for selected slot; opponent and other pairs remain", () => {
+  const s = setup(),
+    r = s.rounds[0],
+    slot = r.slots[0].id;
+  apply(s, a, { type: "offer", round: "1", match: "1", slot }, now);
+  apply(
+    s,
+    a,
+    { type: "offer", round: "1", match: "1", slot: r.slots[1].id },
+    now,
+  );
+  apply(s, b, { type: "offer", round: "1", match: "1", slot }, now);
+  apply(
+    s,
+    { id: "tg3", admin: false },
+    { type: "offer", round: "1", match: "2", slot },
+    now,
+  );
+  apply(s, a, { type: "withdraw", round: "1", match: "1", slot }, now);
+  assert.equal(r.matches[0].offers.length, 2);
+  assert(r.matches[0].offers.some((o) => o.team === "2" && o.slot === slot));
+  assert.equal(r.matches[1].offers.length, 1);
+  assert.throws(() =>
+    apply(
+      s,
+      { id: "tg3", admin: false },
+      { type: "withdraw", round: "1", match: "1", slot },
+      now,
+    ),
+  );
+  apply(s, admin, { type: "assign", round: "1", match: "1", slot: "" }, now);
+  assert.equal(r.matches[0].offers.length, 0);
+  assert.equal(r.matches[0].slot, null);
+  assert.equal(r.matches[1].offers.length, 1);
+});

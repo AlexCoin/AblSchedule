@@ -354,6 +354,12 @@ export function apply(s: State, actor: Actor, input: any, now = Date.now()) {
   }
   if (m.slot) throw Error("Сначала откройте пересогласование");
   if (!r.slots.some((s) => s.id === input.slot)) throw Error("Слот не найден");
+  if (input.type === "withdraw") {
+    m.offers = m.offers.filter(
+      (o) => !(o.team === t.id && o.slot === input.slot),
+    );
+    return;
+  }
   if (input.type === "offer") {
     if (!m.offers.some((o) => o.team === t.id && o.slot === input.slot))
       m.offers.push({ team: t.id, slot: input.slot, by: actor.id });

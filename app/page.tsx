@@ -217,7 +217,6 @@ export default function Home() {
           )}
         </div>
         <strong>{t?.name}</strong>
-        {t?.division && <small className="division-tag">{t.division}</small>}
       </div>
     );
   }
@@ -618,6 +617,22 @@ export default function Home() {
                           (o) => o.team === my.id && o.slot === s.id,
                         );
                       const agreed = mine?.slot === s.id;
+                      const divisionNames = [
+                        ...new Set(
+                          [
+                            ...matches,
+                            ...pending.map((p) =>
+                              r.matches.find((m) => m.id === p.matchId)!,
+                            ),
+                          ]
+                            .map((m) => team(m.a)?.division)
+                            .filter(Boolean),
+                        ),
+                      ];
+                      const cardDivision =
+                        divisionNames.join(" / ") ||
+                        my?.division ||
+                        "Свободный слот";
                       return (
                         <article
                           className={
@@ -637,7 +652,7 @@ export default function Home() {
                           data-slot={s.id}
                         >
                           <div className="card-top">
-                            <span>ПРОФА</span>
+                            <span>{cardDivision}</span>
                           </div>
                           <div className="card-date">
                             {shortDate(s.date)}, {s.time}
@@ -756,17 +771,34 @@ export default function Home() {
                                         организатором.
                                       </small>
                                     )}
+                                  {own && theirs && !mine.slot && (
+                                    <button
+                                      className="withdraw-offer"
+                                      disabled={busy || !open}
+                                      onClick={() =>
+                                        action({
+                                          type: "withdraw",
+                                          round: r.id,
+                                          match: mine.id,
+                                          slot: s.id,
+                                        })
+                                      }
+                                    >
+                                      Убрать мой выбор
+                                    </button>
+                                  )}
                                   {!mine.slot && (
                                     <button
                                       disabled={
-                                        busy ||
-                                        !open ||
-                                        (own && !theirs) ||
-                                        (bothMine && theirs)
+                                        busy || !open || (bothMine && theirs)
                                       }
                                       onClick={() =>
                                         action({
-                                          type: theirs ? "accept" : "offer",
+                                          type: theirs
+                                            ? "accept"
+                                            : own
+                                              ? "withdraw"
+                                              : "offer",
                                           round: r.id,
                                           match: mine.id,
                                           slot: s.id,
@@ -778,7 +810,7 @@ export default function Home() {
                                           ? "Назначит организатор"
                                           : "Подтвердить этот слот"
                                         : own
-                                          ? "Слот выбран"
+                                          ? "Убрать выбор слота"
                                           : "Выбрать этот слот"}
                                     </button>
                                   )}
@@ -951,7 +983,10 @@ export default function Home() {
                                     "Время " +
                                     team(currentPairs[index][0])?.name
                                   }
-                                  value={m.slot || ""}
+                                  value={
+                                    m.slot ||
+                                    (m.offers.length ? "__pending__" : "")
+                                  }
                                   disabled={busy || pairsDirty}
                                   onChange={(e) =>
                                     action({
@@ -963,6 +998,11 @@ export default function Home() {
                                   }
                                 >
                                   <option value="">Не назначено</option>
+                                  {m.offers.length > 0 && !m.slot && (
+                                    <option value="__pending__" disabled>
+                                      Предложено · ждёт подтверждения
+                                    </option>
+                                  )}
                                   {r.slots.map((slot) => (
                                     <option key={slot.id} value={slot.id}>
                                       {slot.date} {slot.time}{" "}
@@ -971,6 +1011,32 @@ export default function Home() {
                                   ))}
                                 </select>
                               </label>
+                              {m.offers.length > 0 && !m.slot && (
+                                <div className="admin-pending">
+                                  <strong>Ожидает подтверждения</strong>
+                                  {m.offers.map((o) => (
+                                    <small key={o.team + o.slot}>
+                                      Предложила {team(o.team)?.name}:{" "}
+                                      {o.slot.replace("T", " ")} МСК
+                                    </small>
+                                  ))}
+                                  <button
+                                    disabled={busy || pairsDirty}
+                                    type="button"
+                                    className="ghost"
+                                    onClick={() =>
+                                      action({
+                                        type: "assign",
+                                        round: r.id,
+                                        match: m.id,
+                                        slot: "",
+                                      })
+                                    }
+                                  >
+                                    Сбросить на «Не назначено»
+                                  </button>
+                                </div>
+                              )}
                               {m.slot && count(m.slot).length > 1 && (
                                 <small className="danger">
                                   Конфликт — выберите другое время одной из пар

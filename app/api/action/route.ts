@@ -37,9 +37,12 @@ export async function POST(req: Request) {
         );
       const labels: Record<string, string> = {
         offer: "Новое предложение времени",
+        withdraw: "Предложение времени отозвано",
         accept: "Время согласовано командами",
         reopen: "Открыто пересогласование",
-        assign: "Организатор назначил время",
+        assign: input.slot
+          ? "Организатор назначил время"
+          : "Организатор сбросил выбор времени",
         publish: "Расписание тура опубликовано",
       };
       const pair = m
