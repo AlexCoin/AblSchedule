@@ -9,11 +9,11 @@ test("heading shows availability, pending status, or first confirmed division ev
   const [a, b] = s.rounds[0].matches;
   a.agreementOrder = 2;
   b.agreementOrder = 1;
-  assert.equal(slotHeading([], s.teams, 0), "Доступен");
-  assert.equal(slotHeading([], s.teams, 2), "Ожидает подтверждения");
-  assert.equal(slotHeading([a], s.teams, 2), "Pale");
-  assert.equal(slotHeading([a, b], s.teams, 0), "Slow");
+  assert.equal(slotHeading([], s.teams, false), "Доступен");
+  assert.equal(slotHeading([], s.teams, true), "Ожидает подтверждения");
+  assert.equal(slotHeading([a], s.teams, true), "Pale");
+  assert.equal(slotHeading([a, b], s.teams, false), "Slow");
   delete a.agreementOrder;
   delete b.agreementOrder;
-  assert.equal(slotHeading([a, b], s.teams, 0), "Pale");
+  assert.equal(slotHeading([a, b], s.teams, false), "Pale");
 });

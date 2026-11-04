@@ -85,14 +85,13 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
   await page.getByRole("button", { name: "Капитан A", exact: true }).click();
   const tentative = page.locator('[data-slot="2026-11-07T10:00"]');
   await expect(tentative).toHaveClass(/tentative-card/);
-  await expect(tentative.locator(".card-top")).toHaveText(
-    "Ожидает подтверждения",
-  );
+  await expect(tentative.locator(".card-top")).toHaveText("Доступен");
   await expect(
     page.locator('[data-slot="2026-11-07T11:10"] .card-top'),
   ).toHaveText("Доступен");
   await expect(tentative.locator(".division-tag")).toHaveCount(0);
   await page.getByRole("button", { name: "Капитан C", exact: true }).click();
+  await expect(tentative.locator(".card-top")).toHaveText("Доступен");
   await tentative
     .getByRole("button", { name: "Убрать выбор слота", exact: true })
     .click();
@@ -139,6 +138,10 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
   });
   await page.getByRole("button", { name: "Капитан D", exact: true }).click();
   await expect(page.locator(".my-match")).toContainText("АТВ Last");
+  await expect(tentative.locator(".card-top")).toHaveText(
+    "Ожидает подтверждения",
+  );
+
   await page
     .locator('[data-slot="2026-11-07T10:00"]')
     .getByRole("button", { name: "Подтвердить этот слот", exact: true })

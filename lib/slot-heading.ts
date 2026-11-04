@@ -2,10 +2,9 @@ import type { Match, Team } from "./domain";
 export function slotHeading(
   matches: Match[],
   teams: Team[],
-  pendingCount: number,
+  canConfirm: boolean,
 ) {
-  if (!matches.length)
-    return pendingCount ? "Ожидает подтверждения" : "Доступен";
+  if (!matches.length) return canConfirm ? "Ожидает подтверждения" : "Доступен";
   const first = [...matches].sort(
     (a, b) => (a.agreementOrder ?? 0) - (b.agreementOrder ?? 0),
   )[0];

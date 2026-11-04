@@ -618,10 +618,12 @@ export default function Home() {
                           (o) => o.team === my.id && o.slot === s.id,
                         );
                       const agreed = mine?.slot === s.id;
+                      const canConfirm =
+                        theirs && open && !mine?.slot && !bothMine;
                       const cardDivision = slotHeading(
                         matches,
                         teams,
-                        pending.length,
+                        canConfirm,
                       );
                       return (
                         <article
@@ -735,7 +737,7 @@ export default function Home() {
                               : matches.length
                                 ? "● " +
                                   (r.published ? "В расписании" : "Согласовано")
-                                : pending.length
+                                : canConfirm
                                   ? "◷ Ожидает подтверждения"
                                   : "○ Доступен"}
                           </div>
