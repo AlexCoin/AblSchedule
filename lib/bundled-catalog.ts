@@ -1,3 +1,4 @@
+import { syncRoundThree } from "./round-three";
 import { syncDivisionPairings } from "./pairing-migration";
 import { createHash } from "node:crypto";
 import { readFileSync, statSync } from "node:fs";
@@ -33,7 +34,7 @@ export function bundledCatalog(): CatalogTeam[] {
     logo: localLogoAvailable(row) ? row.localLogo : row.logo,
   }));
 }
-/** Apply each bundled revision once. User edits and old matches survive subsequent requests. */
+/** Apply bundled revisions once; the tournament launch archives the previous schedule. */
 export function syncBundledCatalog(state: State) {
   if (process.env.DEMO_MODE === "true") {
     state.teams.forEach((t) => {
@@ -52,5 +53,6 @@ export function syncBundledCatalog(state: State) {
     importTeamCatalog(state, rows);
     state.catalogRevision = revision;
   }
+  syncRoundThree(state);
   syncDivisionPairings(state);
 }

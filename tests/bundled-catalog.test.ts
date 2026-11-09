@@ -19,7 +19,7 @@ test("uploaded page contains 32 official teams, eight in each requested division
   for (const name of ["Hungry Dogs", "Beavers"])
     assert.equal(catalog.filter((t) => t.name === name).length, 2);
 });
-test("catalog revision is idempotent and preserves rounds, captain IDs and later user edits", (t) => {
+test("catalog launches round three once, backs up old rounds and preserves captains and later edits", (t) => {
   const prior = process.env.DEMO_MODE;
   process.env.DEMO_MODE = "false";
   t.after(() => {
@@ -36,7 +36,14 @@ test("catalog revision is idempotent and preserves rounds, captain IDs and later
     s.teams.find((t) => t.name === "Normal Team")!.telegramId,
     "123",
   );
-  assert.equal(JSON.stringify(s.rounds[0]), rounds);
+  assert.equal(JSON.stringify(s.scheduleBackup!.rounds[0]), rounds);
+  assert.equal(s.rounds.length, 1);
+  assert.equal(s.rounds[0].name, "3 тур");
+  s.rounds[0].matches[0].offers.push({
+    team: s.rounds[0].matches[0].a,
+    slot: s.rounds[0].slots[0].id,
+  });
+  const current = JSON.stringify(s.rounds);
   const length = s.teams.length;
   const team = s.teams.find(
     (t) => t.sourceTeamKey === catalog[0].sourceTeamKey,
@@ -44,6 +51,8 @@ test("catalog revision is idempotent and preserves rounds, captain IDs and later
   team.name = "Название организатора";
   syncBundledCatalog(s);
   assert.equal(team.name, "Название организатора");
+  assert.equal(JSON.stringify(s.rounds), current);
+  assert.equal(JSON.stringify(s.scheduleBackup!.rounds[0]), rounds);
   assert.equal(s.teams.length, length);
   importTeamCatalog(s, bundledCatalog());
   assert.equal(s.teams.length, length);

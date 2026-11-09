@@ -1,3 +1,4 @@
+import { updateAdminAccess } from "./admin-access";
 import { validateDivisionPairs } from "./division-pairs";
 export type Team = {
   id: string;
@@ -31,6 +32,10 @@ export type State = {
   rounds: Round[];
   catalogRevision?: string;
   pairingRevision?: string;
+  adminLogins?: string[];
+  adminBindings?: Record<string, string>;
+  roundThreeRevision?: string;
+  scheduleBackup?: { savedAt: string; rounds: Round[] };
 };
 export type Actor = { id: string; admin: boolean };
 export function seed(): State {
@@ -174,6 +179,11 @@ export function apply(s: State, actor: Actor, input: any, now = Date.now()) {
   const admin = () => {
     if (!actor.admin) throw Error("Требуются права организатора");
   };
+  if (input.type === "adminAccess") {
+    admin();
+    updateAdminAccess(s, input.logins);
+    return;
+  }
   if (input.type === "claimTeam" || input.type === "leaveTeam") {
     const t = s.teams.find((t) => t.id === input.team);
     if (!t) throw Error("Команда не найдена");

@@ -1,3 +1,4 @@
+import { registerTelegramIdentity } from "../../../../lib/telegram-identity";
 import { sameOrigin } from "../../../../lib/http";
 import { setSession } from "../../../../lib/auth";
 import { verifyTelegramInitData } from "../../../../lib/telegram-init-data";
@@ -13,9 +14,13 @@ export async function POST(req: Request) {
       { status: 503 },
     );
   let id: string;
+  let username: unknown;
   try {
     const body = await req.json();
     id = verifyTelegramInitData(body.initData, process.env.TELEGRAM_BOT_TOKEN);
+    username = JSON.parse(
+      new URLSearchParams(body.initData).get("user")!,
+    ).username;
   } catch (e) {
     return Response.json(
       {
@@ -25,6 +30,7 @@ export async function POST(req: Request) {
       { status: 401 },
     );
   }
+  await registerTelegramIdentity(id, username);
   await setSession(id, true);
   return Response.json({ ok: true });
 }

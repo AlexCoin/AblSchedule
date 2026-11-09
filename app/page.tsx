@@ -14,6 +14,8 @@ type ViewTeam = Team & { mine: boolean };
 type Data = {
   user: { id: string; admin: boolean } | null;
   demo: boolean;
+  adminLogins?: string[];
+  adminBindings?: Record<string, string>;
   teams: ViewTeam[];
   rounds: (Round & { preliminary: PreliminaryBooking[] })[];
 };
@@ -420,7 +422,9 @@ export default function Home() {
                   ? "Новый тур"
                   : adminView === "teams"
                     ? "Команды и капитаны"
-                    : "Управление туром"}
+                    : adminView === "access"
+                      ? "Организаторы"
+                      : "Управление туром"}
             </h2>
             <span className="muted">Профсоюзная · Все время по Москве</span>
           </div>
@@ -826,6 +830,7 @@ export default function Home() {
                     ["current", "Выбранный тур"],
                     ["new", "＋ Новый тур"],
                     ["teams", "Команды и капитаны"],
+                    ["access", "Организаторы"],
                   ].map(([id, label]) => (
                     <button
                       key={id}
@@ -1332,6 +1337,61 @@ export default function Home() {
                       </form>
                     </section>
                   </div>
+                )}
+                {adminView === "access" && (
+                  <section className="panel">
+                    <h3>Доступ организаторов</h3>
+                    <p className="muted">
+                      Укажите Telegram-логины или числовые ID через запятую. Эти
+                      пользователи получат полный доступ к управлению всеми
+                      турами.
+                    </p>
+                    <form
+                      key={JSON.stringify(data.adminLogins)}
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void action({
+                          type: "adminAccess",
+                          logins: new FormData(e.currentTarget).get("logins"),
+                        });
+                      }}
+                    >
+                      <label>
+                        Telegram-логины организаторов
+                        <input
+                          name="logins"
+                          aria-label="Telegram-логины организаторов"
+                          defaultValue={data.adminLogins?.join(", ") || ""}
+                          placeholder="@captain_one, @captain_two, 123456789"
+                          maxLength={4000}
+                        />
+                      </label>
+                      <p className="muted">
+                        После добавления по @логину пользователь должен заново
+                        открыть приложение из бота или отправить боту /start.
+                        Доступ закрепляется за его подтверждённым Telegram ID.
+                      </p>
+                      <p className="muted">
+                        Удаление из списка отзывает добавленный здесь доступ.
+                        Организаторы из ADMIN_TELEGRAM_IDS в настройках сервера
+                        сохраняют доступ.
+                      </p>
+                      <button disabled={busy}>Сохранить организаторов</button>
+                    </form>
+                    {!!data.adminLogins?.length && (
+                      <ul>
+                        {data.adminLogins.map((login) => (
+                          <li key={login}>
+                            {login} —{" "}
+                            {login.startsWith("@") &&
+                            !data.adminBindings?.[login]
+                              ? "ожидает входа через Telegram"
+                              : "доступ настроен"}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </section>
                 )}
                 {adminView === "teams" && (
                   <div className="teams-workspace">

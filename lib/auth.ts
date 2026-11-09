@@ -1,3 +1,5 @@
+import { transaction } from "./db";
+import { hasStoredAdminAccess } from "./admin-access";
 import { cookies } from "next/headers";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { Actor } from "./domain";
@@ -29,7 +31,11 @@ export async function actor(): Promise<Actor | null> {
     return {
       id: data.id,
       admin:
-        (process.env.ADMIN_TELEGRAM_IDS || "").split(",").includes(data.id) ||
+        (process.env.ADMIN_TELEGRAM_IDS || "")
+          .split(",")
+          .map((id) => id.trim())
+          .includes(data.id) ||
+        (await transaction((s) => hasStoredAdminAccess(s, data.id))) ||
         (process.env.DEMO_MODE === "true" && data.id === "demo-admin"),
     };
   } catch {

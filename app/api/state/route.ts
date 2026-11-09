@@ -7,6 +7,8 @@ export async function GET() {
   return Response.json(
     await transaction((s) => ({
       user,
+      adminLogins: user?.admin ? s.adminLogins || [] : undefined,
+      adminBindings: user?.admin ? s.adminBindings || {} : undefined,
       demo: process.env.DEMO_MODE === "true",
       teams: s.teams.map((t) => ({
         ...t,

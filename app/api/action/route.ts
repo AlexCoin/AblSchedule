@@ -1,3 +1,4 @@
+import { storedAdminIds } from "../../../lib/admin-access";
 import { configuredAppUrl } from "../../../lib/app-url";
 import { sameOrigin } from "../../../lib/http";
 import { actor } from "../../../lib/auth";
@@ -33,7 +34,11 @@ export async function POST(req: Request) {
         .map((t) => t.telegramId);
       if (conflict)
         recipients.push(
-          ...(process.env.ADMIN_TELEGRAM_IDS || "").split(",").filter(Boolean),
+          ...(process.env.ADMIN_TELEGRAM_IDS || "")
+            .split(",")
+            .map((id) => id.trim())
+            .filter(Boolean),
+          ...storedAdminIds(s),
         );
       const labels: Record<string, string> = {
         offer: "Новое предложение времени",

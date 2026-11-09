@@ -1,3 +1,4 @@
+import { registerTelegramIdentity } from "../../../../lib/telegram-identity";
 import { teamCallback } from "../../../../lib/team-callback";
 import { teamMenu } from "../../../../lib/team-menu";
 import { transaction } from "../../../../lib/db";
@@ -39,6 +40,7 @@ export async function POST(req: Request) {
     m.from.is_bot
   )
     return Response.json({ ok: true });
+  await registerTelegramIdentity(String(m.from.id), m.from.username);
   const command = /^\/(start|schedule|help|teams)(?:@\w+)?(?:\s+.*)?$/.exec(
     m.text || "",
   );
