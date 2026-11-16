@@ -7,6 +7,11 @@ export async function GET() {
   return Response.json(
     await transaction((s) => ({
       user,
+      currentRoundId: s.rounds.some(
+        (r) => r.id === s.currentRoundId && (user || r.published),
+      )
+        ? s.currentRoundId
+        : undefined,
       adminLogins: user?.admin ? s.adminLogins || [] : undefined,
       adminBindings: user?.admin ? s.adminBindings || {} : undefined,
       demo: process.env.DEMO_MODE === "true",

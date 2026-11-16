@@ -17,6 +17,7 @@ export async function POST(req: Request) {
   const selectedRound = await transaction((s) => {
     const selected =
       (round ? s.rounds.find((r) => r.id === round) : undefined) ??
+      s.rounds.find((r) => r.id === s.currentRoundId) ??
       s.rounds.filter((r) => !r.published).at(-1) ??
       s.rounds.at(-1);
     if (!selected || selected.matches.length < 2)

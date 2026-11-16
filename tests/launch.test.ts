@@ -157,7 +157,8 @@ test("database migration commits a backup and survives a fresh server process wi
       old.rounds[0].matches[0].offers.push({team:"1",slot:"old-slot"});
       db.prepare("INSERT INTO app VALUES (1,?)").run(JSON.stringify(old)); db.close();
       require("./lib/db").transaction(s => {
-        assert.equal(s.rounds.length, 1); assert.equal(s.rounds[0].name, "3 тур");
+        assert.equal(s.rounds.length, 2); assert.equal(s.rounds[0].name, "3 тур");
+        assert.equal(s.rounds[1].name, "4 тур"); assert.equal(s.currentRoundId, s.rounds[1].id);
         assert.deepEqual(s.scheduleBackup.rounds, old.rounds);
         const r = s.rounds[0]; r.matches[0].offers.push({team:r.matches[0].a,slot:r.slots[0].id});
       }).catch(e => { console.error(e); process.exitCode=1; });
@@ -165,7 +166,8 @@ test("database migration commits a backup and survives a fresh server process wi
     run(`
       const assert = require("node:assert/strict");
       require("./lib/db").transaction(s => {
-        assert.equal(s.rounds.length, 1); assert.equal(s.rounds[0].name, "3 тур");
+        assert.equal(s.rounds.length, 2); assert.equal(s.rounds[0].name, "3 тур");
+        assert.equal(s.rounds[1].name, "4 тур"); assert.equal(s.currentRoundId, s.rounds[1].id);
         assert.equal(s.rounds[0].matches[0].offers.length, 1);
         assert.equal(s.scheduleBackup.rounds[0].name, "Старое расписание");
         assert.equal(s.scheduleBackup.rounds[0].matches[0].offers[0].slot, "old-slot");

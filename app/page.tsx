@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import { slotHeading } from "../lib/slot-heading";
 import MatchPairEditor from "../components/MatchPairEditor";
+import UnagreedMatches from "../components/UnagreedMatches";
 import {
   defaultDivisionPairs,
   validateDivisionPairs,
@@ -14,6 +15,7 @@ type ViewTeam = Team & { mine: boolean };
 type Data = {
   user: { id: string; admin: boolean } | null;
   demo: boolean;
+  currentRoundId?: string;
   adminLogins?: string[];
   adminBindings?: Record<string, string>;
   teams: ViewTeam[];
@@ -167,7 +169,10 @@ export default function Home() {
     }
   }
   const teams = data?.teams || [];
-  const r = data?.rounds.find((r) => r.id === roundId) || data?.rounds.at(-1);
+  const r =
+    data?.rounds.find((r) => r.id === roundId) ||
+    data?.rounds.find((r) => r.id === data.currentRoundId) ||
+    data?.rounds.at(-1);
   const officialTeams = teams.filter(
     (t) => t.sourceUrl === "https://ablforpeople.com/divisions",
   );
@@ -443,6 +448,7 @@ export default function Home() {
                   {data.rounds.map((x) => (
                     <option key={x.id} value={x.id}>
                       {x.name}
+                      {x.id === data.currentRoundId ? " · текущий" : ""}
                       {x.published ? " · опубликован" : " · согласование"}
                     </option>
                   ))}
@@ -924,6 +930,7 @@ export default function Home() {
                         конфликтов.
                       </p>
                     </section>
+                    <UnagreedMatches key={r.id} round={r} teams={teams} />
                     <section className="panel">
                       <h3>Матчи · {r.name}</h3>
                       <p className="muted">

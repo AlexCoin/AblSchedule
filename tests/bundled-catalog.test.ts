@@ -19,7 +19,7 @@ test("uploaded page contains 32 official teams, eight in each requested division
   for (const name of ["Hungry Dogs", "Beavers"])
     assert.equal(catalog.filter((t) => t.name === name).length, 2);
 });
-test("catalog launches round three once, backs up old rounds and preserves captains and later edits", (t) => {
+test("catalog launches rounds three and four once, backs up old rounds and preserves captains and later edits", (t) => {
   const prior = process.env.DEMO_MODE;
   process.env.DEMO_MODE = "false";
   t.after(() => {
@@ -37,7 +37,8 @@ test("catalog launches round three once, backs up old rounds and preserves capta
     "123",
   );
   assert.equal(JSON.stringify(s.scheduleBackup!.rounds[0]), rounds);
-  assert.equal(s.rounds.length, 1);
+  assert.equal(s.rounds.length, 2);
+  assert.equal(s.currentRoundId, s.rounds[1].id);
   assert.equal(s.rounds[0].name, "3 тур");
   s.rounds[0].matches[0].offers.push({
     team: s.rounds[0].matches[0].a,

@@ -35,6 +35,9 @@ export type State = {
   adminLogins?: string[];
   adminBindings?: Record<string, string>;
   roundThreeRevision?: string;
+  roundFourRevision?: string;
+  currentRoundId?: string;
+  roundFourBackup?: { savedAt: string; round: Round };
   scheduleBackup?: { savedAt: string; rounds: Round[] };
 };
 export type Actor = { id: string; admin: boolean };
@@ -246,6 +249,7 @@ export function apply(s: State, actor: Actor, input: any, now = Date.now()) {
         { start: input.start, perDay: input.perDay },
       ),
     );
+    s.currentRoundId = s.rounds.at(-1)!.id;
     return;
   }
   const r = s.rounds.find((r) => r.id === input.round);

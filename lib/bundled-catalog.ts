@@ -1,4 +1,5 @@
 import { syncRoundThree } from "./round-three";
+import { syncRoundFour } from "./round-four";
 import { syncDivisionPairings } from "./pairing-migration";
 import { createHash } from "node:crypto";
 import { readFileSync, statSync } from "node:fs";
@@ -55,4 +56,5 @@ export function syncBundledCatalog(state: State) {
   }
   syncRoundThree(state);
   syncDivisionPairings(state);
+  syncRoundFour(state);
 }

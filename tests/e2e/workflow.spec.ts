@@ -103,9 +103,15 @@ test("captains negotiate, organizer resolves conflicts and publishes; mobile fit
   await page.getByRole("button", { name: "Управление турниром" }).click();
   const pendingSlot = page.locator(".admin-match select").nth(1);
   await expect(pendingSlot).toHaveValue("__pending__");
+  await expect(
+    page.locator(".negotiation-report [data-negotiation=one-sided]"),
+  ).toHaveCount(1);
   await expect(page.locator(".admin-pending")).toContainText("АИТ");
   await pendingSlot.selectOption("");
   await expect(page.locator(".admin-pending")).toHaveCount(0);
+  await expect(
+    page.locator(".negotiation-report [data-negotiation=empty]"),
+  ).toHaveCount(16);
   await page.getByRole("button", { name: "Капитан C", exact: true }).click();
   await tentative
     .getByRole("button", { name: "Выбрать этот слот", exact: true })

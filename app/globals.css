@@ -1113,7 +1113,8 @@ body {
   font-size: 11px;
   color: var(--muted);
 }
-.round-metrics {
+.round-metrics,
+.negotiation-metrics {
   display: flex;
   flex-wrap: wrap;
   gap: 18px;
@@ -1121,7 +1122,8 @@ body {
   color: var(--muted);
   padding: 0 20px;
 }
-.round-metrics b {
+.round-metrics b,
+.negotiation-metrics b {
   color: #222;
   font-size: 17px;
   margin-right: 4px;
@@ -1669,5 +1671,79 @@ summary.pair-division-heading h4 {
 @media (max-width: 760px) {
   .cards .card-heading-status > span {
     font-size: 10px;
+  }
+}
+
+.negotiation-metrics {
+  margin: 12px 0;
+  padding: 0;
+}
+.negotiation-filter {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+.negotiation-filter input {
+  width: auto;
+}
+.negotiation-report summary {
+  cursor: pointer;
+  font-weight: 700;
+  padding: 8px 0;
+}
+.negotiation-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+.negotiation-row {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.negotiation-row[data-negotiation="no-common"] {
+  border-color: #b58b34;
+  background: #faf5e5;
+}
+.negotiation-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+.negotiation-heading span {
+  color: var(--muted);
+}
+.negotiation-row p {
+  margin: 8px 0;
+}
+.negotiation-warning {
+  color: #79540f;
+  font-weight: 700;
+}
+.negotiation-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.negotiation-choices div {
+  display: grid;
+  gap: 4px;
+}
+.negotiation-choices span {
+  color: var(--muted);
+  line-height: 1.6;
+}
+.negotiation-row small {
+  display: block;
+  margin-top: 10px;
+}
+@media (max-width: 600px) {
+  .negotiation-choices {
+    grid-template-columns: 1fr;
   }
 }
